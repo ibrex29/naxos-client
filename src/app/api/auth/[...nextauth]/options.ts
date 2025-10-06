@@ -11,18 +11,18 @@ import  api  from '@/utils/api';
 const credentialsProviderOptions: any = {
   name: 'Login',
   credentials: {
-    email: { label: 'Username', type: 'text', placeholder: 'admin' },
+    email: { label: 'Email', type: 'text', placeholder: 'admin@example.com' },
     password: { label: 'Password', type: 'password', placeholder: 'Password' }
   },
   authorize: async (credentials: any) => {
-    if (!credentials?.username || !credentials?.password) {
-      throw new Error('Username and password are required');
+    if (!credentials?.email || !credentials?.password) {
+      throw new Error('Email and password are required');
     }
 
-    const { username, password } = credentials;
+    const { email, password } = credentials;
     try {
       // Use the Axios instance to make the POST request
-      const response = await api.post('/v1/auth/login', { username, password });
+      const response = await api.post('/auth/login', { email, password });
       const { accessToken, refreshToken, profile } = response.data;
 
       // Check for a valid profile and token

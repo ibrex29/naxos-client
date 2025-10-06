@@ -1,15 +1,12 @@
 'use client';
 
-import RoleSelector from "@/components/role-selector";
-import { UserRole } from "@/types";
-import { useRouter } from "next/navigation";
-
 export default function Home() {
-  const router = useRouter();
+  // const router = useRouter();
 
-  const handleRoleSelect = (role: UserRole) => {
-    router.push(`/dashboard/${role}`);
-  };
+  // const handleRoleSelect = (role: UserRole) => {
+  //   router.push(`/dashboard/${role}`);
+  // };
 
-  return <RoleSelector onRoleSelect={handleRoleSelect} />;
+  // return <RoleSelector onRoleSelect={handleRoleSelect} />;
+  return <h1 className="text-3xl font-bold underline">Hello world!</h1>;
 }

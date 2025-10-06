@@ -12,8 +12,9 @@ export type AuthForm = {
 };
 
 export const rolesMap: Record<string, string> = {
-  [UserRole.Admin]: '/dashboard/admin',
-  [UserRole.Alumni]: '/dashboard/alumni',
-  [UserRole.Staff]: '/dashboard/staff',
+  [UserRole.Admin]: '/dashboard/super-admin/overview',
+  [UserRole.Sales]: '/dashboard/sales-admin/create-order',
+  [UserRole.Warehouse]: '/dashboard/warehouse-admin/inventory',
+  [UserRole.Finance]: '/dashboard/finance-admin/reports',
 };
 

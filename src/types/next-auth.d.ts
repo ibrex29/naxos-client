@@ -18,7 +18,7 @@ declare module 'next-auth' {
     }
 
     interface Session {
-        user: Partial<User>;
+        user: User;
         token: token;
     }
 }

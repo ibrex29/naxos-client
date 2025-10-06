@@ -1,6 +1,6 @@
+// In your Badge component file
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
-
 import { cn } from "@/lib/utils"
 
 const badgeVariants = cva(
@@ -15,6 +15,8 @@ const badgeVariants = cva(
         destructive:
           "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
         outline: "text-foreground",
+        warning:
+          "border-transparent bg-yellow-500 text-yellow-900 hover:bg-yellow-500/80", // Add warning variant
       },
     },
     defaultVariants: {

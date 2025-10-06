@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from "react";
-import { useRouter, useParams } from "next/navigation";
-import { UserRole } from "@/types";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Sidebar from "@/components/layout/sidebar";
+import { UserRole } from "@/types/enum";
 
 export default function DashboardLayout({
   children,
@@ -11,36 +12,50 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { role } = useParams();
-  const selectedRole = role as UserRole;
-  const [activeSection, setActiveSection] = useState<string>(() => {
-    switch (selectedRole) {
-      case "sales":
-        return "pos";
-      case "warehouse":
-        return "inventory";
-      default:
-        return "dashboard";
-    }
-  });
+  const { data: session, status } = useSession();
 
-  const handleLogout = () => {
-    router.push("/");
+  // Get user from session
+  const user = session?.user;
+
+  // Initialize active section based on role
+  const [activeSection, setActiveSection] = useState<string>("overview");
+
+  useEffect(() => {
+    if (status === "loading") return;
+
+    if (!user) {
+      router.push("/signin");
+      return;
+    }
+
+    switch (user.role as UserRole) {
+      case UserRole.Sales:
+        setActiveSection("pos");
+        break;
+      case UserRole.Warehouse:
+        setActiveSection("inventory");
+        break;
+      default:
+        setActiveSection("overview");
+    }
+  }, [status, user, router]);
+
+  const handleLogout = async () => {
+    const { signOut } = await import("next-auth/react");
+    await signOut({ callbackUrl: "/signin" });
   };
 
-  if (!selectedRole) {
-    router.push("/");
+  if (status === "loading") {
+    return <div className="p-6">Loading dashboard...</div>;
+  }
+
+  if (!user) {
     return null;
   }
 
   return (
     <div className="flex h-screen bg-background">
-      <Sidebar
-        userRole={selectedRole}
-        activeSection={activeSection}
-        onSectionChange={setActiveSection}
-        onLogout={handleLogout}
-      />
+      <Sidebar user={user} activeSection={activeSection} onLogout={handleLogout} />
       <main className="flex-1 overflow-auto">
         <div className="p-6">{children}</div>
       </main>

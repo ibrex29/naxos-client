@@ -1,115 +1,253 @@
 'use client';
 
-import { Button } from "@/components/ui/button";
-import { UserRole } from "@/types";
+import { useState, useEffect } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { cn } from '@/lib/utils';
 import {
-  BarChart3,
+  LayoutDashboard,
   Users,
-  Pill,
-  FileText,
-  Settings,
-  ShoppingCart,
   Package,
-  AlertTriangle,
-  TrendingUp,
+  BarChart3,
+  FileText,
+  UserCheck,
   LogOut,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
+  Pill,
+  Warehouse,
+  Settings,
+  Menu,
+  Building2,
+  ChevronRight,
+  Plus,
+  Factory,
+} from 'lucide-react';
+import { UserRole } from '@/types/enum';
+import { User } from '@/app/api/service/userService';
 
 interface SidebarProps {
-  userRole: UserRole;
-  activeSection: string;
-  onSectionChange: (section: string) => void;
+  user: User;
   onLogout: () => void;
+  isOpen?: boolean;
+  setIsOpen?: (open: boolean) => void;
 }
 
-const Sidebar = ({ userRole, activeSection, onSectionChange, onLogout }: SidebarProps) => {
-  const adminMenuItems = [
-    { id: "dashboard", label: "Dashboard", icon: BarChart3 },
-    { id: "staff", label: "Staff Management", icon: Users },
-    { id: "medicines", label: "Medicine Master", icon: Pill },
-    { id: "reports", label: "Reports & Analytics", icon: FileText },
-    { id: "settings", label: "Settings", icon: Settings },
-  ];
-
-  const salesMenuItems = [
-    { id: "pos", label: "Point of Sale", icon: ShoppingCart },
-    { id: "orders", label: "Order History", icon: FileText },
-    { id: "customers", label: "Customer Management", icon: Users },
-    { id: "stock-check", label: "Stock Availability", icon: Package },
-  ];
-
-  const warehouseMenuItems = [
-    { id: "inventory", label: "Inventory Overview", icon: Package },
-    { id: "stock-inward", label: "Stock Inward", icon: TrendingUp },
-    { id: "alerts", label: "Stock Alerts", icon: AlertTriangle },
-    { id: "reports", label: "Stock Reports", icon: FileText },
-  ];
-
+const SidebarContent = ({ user, activeSection, onLogout, onSectionChange, setIsOpen }: {
+  user: User;
+  activeSection: string;
+  onLogout: () => void;
+  onSectionChange: (section: string) => void;
+  setIsOpen?: (open: boolean) => void;
+}) => {
   const getMenuItems = () => {
-    switch (userRole) {
-      case "admin":
-        return adminMenuItems;
-      case "sales":
-        return salesMenuItems;
-      case "warehouse":
-        return warehouseMenuItems;
-      default:
-        return [];
-    }
-  };
+  switch (user.role) {
+    case UserRole.Admin: // super-admin
+      return [
+        { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+        { id: 'staff', label: 'Staff Management', icon: Users },
+        { id: 'manufacturers', label: 'Manufacturers', icon: Factory },
+        { id: 'distributors', label: 'Distributors', icon: Building2 },
+        { id: 'shipments', label: 'Shipment Receiving', icon: Package },
+        { id: 'stocks', label: 'Stocks', icon: Pill },
+      
+      ];
+    case UserRole.Sales: // sales-admin
+      return [
+        { id: 'create-order', label: 'Create Order', icon: Plus },
+        { id: 'orders', label: 'Orders & Payments', icon: FileText },
+      ];
+    case UserRole.Warehouse: // warehouse-admin
+      return [
+        { id: 'inventory', label: 'Inventory Management', icon: Warehouse },
+        { id: 'shipments', label: 'Shipment Receiving', icon: Package },
+        { id: 'stocks', label: 'Stocks', icon: Pill },
+      ];
+    case UserRole.Finance: // finance-admin
+      return [
+        { id: 'reports', label: 'Reports', icon: BarChart3 },
+        { id: 'approvals', label: 'Order Approvals', icon: UserCheck },
+      ];
+    default:
+      return [];
+  }
+};
 
-  const getRoleTitle = () => {
-    switch (userRole) {
-      case "admin":
-        return "Admin Portal";
-      case "sales":
-        return "Sales Portal";
-      case "warehouse":
-        return "Warehouse Portal";
-      default:
-        return "Portal";
-    }
-  };
 
   const menuItems = getMenuItems();
 
+  const getRoleColor = (role: string) => {
+  switch (role) {
+    case UserRole.Admin: // super-admin
+      return 'text-destructive';
+    case UserRole.Sales: // sales-admin
+      return 'text-primary';
+    case UserRole.Warehouse: // warehouse-admin
+      return 'text-secondary';
+    case UserRole.Finance: // finance-admin
+      return 'text-blue-500';
+    default:
+      return 'text-muted-foreground';
+  }
+};
+
+
   return (
-    <div className="w-64 bg-card border-r border-border h-screen flex flex-col">
+    <div className="flex flex-col h-full">
+      {/* Header */}
       <div className="p-6 border-b border-border">
-        <h2 className="text-xl font-semibold text-foreground">PharmaCare ERP</h2>
-        <p className="text-sm text-muted-foreground mt-1">{getRoleTitle()}</p>
+        <div className="flex items-center space-x-3 mb-3">
+          <div className="p-2 bg-primary/10 rounded-lg">
+            <Building2 className="h-6 w-6 text-primary" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold text-primary">Naxos</h2>
+            <p className="text-xs text-muted-foreground">Healthcare Ltd</p>
+          </div>
+        </div>
+        <div className="flex items-center justify-between">
+          <Badge variant="outline" className={cn('text-xs capitalize', getRoleColor(user.role))}>
+            {user.role} Portal
+          </Badge>
+        </div>
       </div>
-      <nav className="flex-1 p-4">
-        <ul className="space-y-2">
-          {menuItems.map(({ id, label, icon: Icon }) => (
-            <li key={id}>
+      
+      {/* Navigation Menu */}
+      <div className="flex-1 p-4">
+        <div className="space-y-1">
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeSection === item.id;
+            
+            return (
               <Button
-                variant={activeSection === id ? "default" : "ghost"}
+                key={item.id}
+                variant={isActive ? 'default' : 'ghost'}
                 className={cn(
-                  "w-full justify-start",
-                  activeSection === id && "bg-primary text-primary-foreground"
+                  'w-full justify-start h-10 px-3 relative',
+                  isActive && 'bg-primary text-primary-foreground shadow-sm font-semibold',
+                  isActive && 'border-l-4 border-primary pl-2'
                 )}
-                onClick={() => onSectionChange(id)}
+                onClick={() => {
+                  onSectionChange(item.id);
+                  setIsOpen?.(false);
+                }}
               >
                 <Icon className="mr-3 h-4 w-4" />
-                {label}
+                <span className="text-sm">{item.label}</span>
+                {isActive && (
+                  <ChevronRight className="absolute right-3 h-4 w-4 text-primary-foreground" />
+                )}
               </Button>
-            </li>
-          ))}
-        </ul>
-      </nav>
-      <div className="p-4 border-t border-border">
+            );
+          })}
+        </div>
+      </div>
+      
+      {/* Settings & User Section */}
+      <div className="p-4 border-t border-border space-y-4">
         <Button
-          variant="outline"
-          className="w-full justify-start"
-          onClick={onLogout}
+          variant={activeSection === 'settings' ? 'default' : 'ghost'}
+          className={cn(
+            'w-full justify-start h-10 px-3 relative',
+            activeSection === 'settings' && 'bg-primary text-primary-foreground shadow-sm font-semibold',
+            activeSection === 'settings' && 'border-l-4 border-primary pl-2'
+          )}
+          onClick={() => {
+            onSectionChange('settings');
+            setIsOpen?.(false);
+          }}
         >
-          <LogOut className="mr-3 h-4 w-4" />
-          Switch Role
+          <Settings className="mr-3 h-4 w-4" />
+          <span className="text-sm">Settings</span>
+          {activeSection === 'settings' && (
+            <ChevronRight className="absolute right-3 h-4 w-4 text-primary-foreground" />
+          )}
         </Button>
+        
+        {/* User Info */}
+        <div className="space-y-3">
+          <div className="px-3 py-2 bg-primary-foreground border border-primary/50 rounded-lg">
+            <p className="text-sm font-medium truncate">{user.fullname}</p>
+            <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+            {/* <Badge 
+              variant="secondary" 
+              className={cn('text-xs mt-2 capitalize', getRoleColor(user.role))}
+            >
+              {user.role}
+            </Badge> */}
+          </div>
+          
+          <Button 
+            variant="outline" 
+            className="w-full h-10" 
+            onClick={() => {
+              onLogout();
+              setIsOpen?.(false);
+            }}
+          >
+            <LogOut className="mr-2 h-4 w-4" />
+            <span className="text-sm">Logout</span>
+          </Button>
+        </div>
       </div>
     </div>
+  );
+};
+
+const Sidebar = ({ user, onLogout, isOpen, setIsOpen }: SidebarProps) => {
+  const router = useRouter();
+  const pathname = usePathname();
+  const [activeSection, setActiveSection] = useState<string>('');
+
+  // Initialize activeSection based on current URL
+  useEffect(() => {
+    const pathSegments = pathname.split('/');
+    const section = pathSegments[pathSegments.length - 1] || 'overview';
+    setActiveSection(section);
+  }, [pathname]);
+
+  const handleSectionChange = (section: string) => {
+    setActiveSection(section);
+    router.push(`/dashboard/${user.role}/${section}`);
+  };
+
+  return (
+    <>
+      {/* Mobile Sidebar */}
+      <div className="lg:hidden">
+        <Sheet open={isOpen} onOpenChange={setIsOpen}>
+          <SheetTrigger asChild>
+            <Button 
+              variant="outline" 
+              size="icon" 
+              className="fixed top-4 left-4 z-50 bg-background shadow-md"
+            >
+              <Menu className="h-4 w-4" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="p-0 w-80">
+            <SidebarContent 
+              user={user} 
+              activeSection={activeSection} 
+              onLogout={onLogout} 
+              onSectionChange={handleSectionChange}
+              setIsOpen={setIsOpen}
+            />
+          </SheetContent>
+        </Sheet>
+      </div>
+
+      {/* Desktop Sidebar */}
+      <div className="hidden lg:flex w-72 bg-sidebar border-r border-sidebar-border h-screen flex-col">
+        <SidebarContent 
+          user={user} 
+          activeSection={activeSection} 
+          onLogout={onLogout} 
+          onSectionChange={handleSectionChange}
+        />
+      </div>
+    </>
   );
 };
 
