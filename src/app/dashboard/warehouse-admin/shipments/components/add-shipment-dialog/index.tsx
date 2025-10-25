@@ -1,4 +1,4 @@
-import { JSX, ChangeEvent } from "react";
+import { JSX, ChangeEvent, Dispatch, SetStateAction } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,8 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Package, Scan, Search } from "lucide-react";
 import FileUpload from "@/components/file-upload";
-import { ShipmentItem, ShipmentMode, MedicineFormEnum, Manufacturer } from "@/app/api/service/shipmentService";
+import { ShipmentItem, ShipmentMode, MedicineFormEnum } from "@/app/api/service/shipmentService";
 import toast from "react-hot-toast";
+import { Manufacturer } from "@/app/api/service/manufacturerService";
 
 interface AddShipmentDialogProps {
   isAddDialogOpen: boolean;
@@ -31,13 +32,13 @@ interface AddShipmentDialogProps {
   newShipmentItems: ShipmentItem[];
   setNewShipmentItems: (items: ShipmentItem[]) => void;
   invoiceDoc: Array<{ url: string; fileName: string }>;
-  setInvoiceDoc: (files: Array<{ url: string; fileName: string }>) => void;
+  setInvoiceDoc: Dispatch<SetStateAction<Array<{ url: string; fileName: string }>>>;
   qualityCheck: Array<{ url: string; fileName: string }>;
-  setQualityCheck: (files: Array<{ url: string; fileName: string }>) => void;
+  setQualityCheck: Dispatch<SetStateAction<Array<{ url: string; fileName: string }>>>;
   packingList: Array<{ url: string; fileName: string }>;
-  setPackingList: (files: Array<{ url: string; fileName: string }>) => void;
+  setPackingList: Dispatch<SetStateAction<Array<{ url: string; fileName: string }>>>;
   insurance: Array<{ url: string; fileName: string }>;
-  setInsurance: (files: Array<{ url: string; fileName: string }>) => void;
+  setInsurance: Dispatch<SetStateAction<Array<{ url: string; fileName: string }>>>;
   manufacturers: Manufacturer[];
   isManufacturersLoading: boolean;
   manufacturerSearch: string;
@@ -56,13 +57,9 @@ export default function AddShipmentDialog({
   handleInputChange,
   newShipmentItems,
   setNewShipmentItems,
-  invoiceDoc,
   setInvoiceDoc,
-  qualityCheck,
   setQualityCheck,
-  packingList,
   setPackingList,
-  insurance,
   setInsurance,
   manufacturers,
   isManufacturersLoading,

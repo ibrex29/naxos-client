@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, ChangeEvent } from "react";
-import { Shipment, SortField, FilterStatus, FilterDeliveryStatus, FilterShipmentMode, ShipmentMode, MedicineFormEnum, ShipmentDocument, ShipmentItem } from "@/app/api/service/shipmentService";
+import { Shipment, SortField, FilterStatus, FilterDeliveryStatus, FilterShipmentMode, ShipmentMode, ShipmentDocument, ShipmentItem } from "@/app/api/service/shipmentService";
 import { useShipments, useShipmentManagement } from "@/hooks/use-shipment-management";
 import { useManufacturers } from "@/hooks/use-manufacturer";
 
@@ -107,11 +107,11 @@ export default function ShipmentReceiving() {
         !item.medicine.batchNumber ||
         !item.medicine.expiryDate ||
         !Number.isFinite(item.medicine.quantity) ||
-        item.medicine.quantity <= 0 ||
+        item.medicine?.quantity <= 0 ||
         !Number.isFinite(item.medicine.unitCost) ||
-        item.medicine.unitCost <= 0 ||
+        item.medicine?.unitCost <= 0 ||
         !Number.isFinite(item.medicine.unitCostToBeSold) ||
-        item.medicine.unitCostToBeSold <= 0
+        item.medicine?.unitCostToBeSold <= 0
     );
 
     if (invalidItem) {
@@ -152,11 +152,11 @@ export default function ShipmentReceiving() {
           name: item.medicine.name,
           form: item.medicine.form,
           manufacturerId: item.medicine.manufacturerId,
-          strength: item.medicine.strength,
-          manufacturingDate: item.medicine.manufacturingDate || undefined,
-          packSize: item.medicine.packSize,
+          strength: item.medicine.strength ?? "",
+          manufacturingDate: item.medicine.manufacturingDate ?? "",
+          packSize: item.medicine.packSize ?? 0,
           batchNumber: String(item.medicine.batchNumber),
-          expiryDate: item.medicine.expiryDate,
+          expiryDate: String(item.medicine.expiryDate),
           quantity: Number(item.medicine.quantity),
           unitCost: Number(item.medicine.unitCost),
           unitCostToBeSold: Number(item.medicine.unitCostToBeSold),

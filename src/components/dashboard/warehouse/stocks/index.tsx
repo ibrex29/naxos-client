@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 import { JSX, useState } from 'react';
 import { useStockManagement } from '@/hooks/use-stocks-management';

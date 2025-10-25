@@ -2,8 +2,8 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { UserRole } from "@/types";
 import { Shield, ShoppingCart, Package } from "lucide-react";
+import { UserRole } from "@/types/enum";
 
 interface RoleSelectorProps {
   onRoleSelect: (role: UserRole) => void;

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 'use client';
 
 import { useState } from 'react';
@@ -78,10 +79,7 @@ export default function Inventory() {
       .map(batch => ({ ...batch, medicineName: medicine.name, medicineId: medicine.id }))
   );
 
-  // Calculate total stock value
-  const totalStockValue = mockMedicines.reduce((total, medicine) => 
-    total + (medicine.stock * medicine.costPrice), 0
-  );
+
 
   const getStockStatus = (current: number, threshold: number): { label: string; variant: 'destructive' | 'default' | 'warning' } => {
     if (current === 0) return { label: 'Out of Stock', variant: 'destructive' };
@@ -206,13 +204,8 @@ export default function Inventory() {
         </div>
 
         {/* KPI Grid */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <KPICard
-            title="Total Stock Value"
-            value={`₦${totalStockValue.toLocaleString()}`}
-            subtitle="Current inventory worth"
-            status="success"
-          />
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          
           <KPICard
             title="Low Stock Items"
             value={lowStockMedicines.length.toString()}
@@ -516,7 +509,7 @@ export default function Inventory() {
                           <TableCell>
                             <Badge variant={status.variant}>{status.label}</Badge>
                           </TableCell>
-                          <TableCell>₦{(medicine.costPrice || medicine.purchasePrice || 0).toFixed(2)}</TableCell>
+                          <TableCell>₦{(medicine.purchasePrice || 0).toFixed(2)}</TableCell>
                           <TableCell>₦{medicine.sellingPrice.toFixed(2)}</TableCell>
                           <TableCell>
                             <Button size="sm" variant="outline">

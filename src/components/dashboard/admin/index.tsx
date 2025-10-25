@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { mockMedicines, mockOrders, mockStockAlerts, mockSalesReports } from '@/data';
+import { mockMedicines, mockOrders, mockSalesReports } from '@/data';
 import { 
   Users,  
   Clock,
@@ -17,13 +17,10 @@ import { KPICard } from '@/components/shared/kpi-card';
 import { AlertCard } from '@/components/shared/alert-card';
 
 export default function Overview() {
-  const totalMedicines = mockMedicines.length;
   const lowStockCount = mockMedicines.filter(m => m.stock <= m.minThreshold).length;
-  const totalOrders = mockOrders.length;
   const pendingOrders = mockOrders.filter(o => o.status === 'pending').length;
   const todaysSales = mockSalesReports[0]?.totalSales || 0;
   const todaysOrders = mockSalesReports[0]?.totalOrders || 0;
-  const criticalAlerts = mockStockAlerts.filter(a => a.severity === 'high').length;
 
   // Calculate expiring stock values (mock data)
   const expiringIn30Days = 89500;
@@ -37,7 +34,7 @@ export default function Overview() {
     { id: 'NX-004', customer: 'WellPoint Medical', amount: '₦156,000', status: 'Delivered', date: 'Jan 14, 2024' },
   ];
 
-  const getStatusVariant = (status) => {
+  const getStatusVariant = (status: string): 'default' | 'secondary' | 'outline' | 'destructive' => {
     switch (status) {
       case 'Delivered': return 'default';
       case 'Shipped': return 'secondary';

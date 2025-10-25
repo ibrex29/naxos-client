@@ -79,7 +79,7 @@ export default function ShipmentDetailsDialog({
     const data = shipment.items.map((item) => [
       item.medicine.name || "Unknown",
       item.medicine.form || "N/A",
-      item.medicine.manufacturer.name || "N/A",
+      item.medicine?.manufacturer || undefined,
       item.medicine.strength || "N/A",
       item.medicine.batchNumber || "N/A",
       item.medicine.expiryDate || "N/A",
@@ -369,11 +369,11 @@ export default function ShipmentDetailsDialog({
                   <div key={index} className="grid grid-cols-8 gap-4 p-3 border-t text-sm">
                     <span>{item.medicine.name || "Unknown"}</span>
                     <span>{item.medicine.form || "N/A"}</span>
-                    <span>{item.medicine.manufacturer.name || "N/A"}</span>
+                    <span>{item.medicine.manufacturer || "N/A"}</span>
                     <span>{item.medicine.strength || "N/A"}</span>
-                    <span className="font-mono">{item.batchNumber || "N/A"}</span>
-                    <span>{item.expiryDate ? new Date(item.expiryDate).toLocaleDateString() : "N/A"}</span>
-                    <span>{item.quantity || 0} units</span>
+                    <span className="font-mono">{item.medicine.batchNumber || "N/A"}</span>
+                    <span>{item.medicine.expiryDate ? new Date(item.medicine.expiryDate).toLocaleDateString() : "N/A"}</span>
+                    <span>{item.medicine.quantity || 0} units</span>
                     <span>₦{(item.medicine.unitCost || 0).toFixed(2)}</span>
                   </div>
                 ))}

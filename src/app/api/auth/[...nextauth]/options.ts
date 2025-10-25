@@ -77,6 +77,10 @@ export const authOptions: AuthOptions = {
         firstName: token.firstName as string,
         lastName: token.lastName as string,
         role: token.role as string,
+        token: {
+          accessToken: token.access as string,
+          refreshToken: token.refresh as string,
+        }
       };
       session.token = token.access as string;
       return session;

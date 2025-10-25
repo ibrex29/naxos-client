@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,16 +24,23 @@ import {
   Factory,
 } from 'lucide-react';
 import { UserRole } from '@/types/enum';
-import { User } from '@/app/api/service/userService';
+import { User } from 'next-auth';
 
 interface SidebarProps {
   user: User;
+  activeSection: string;
   onLogout: () => void;
-  isOpen?: boolean;
-  setIsOpen?: (open: boolean) => void;
+  onSectionChange: (section: string) => void;
 }
 
-const SidebarContent = ({ user, activeSection, onLogout, onSectionChange, setIsOpen }: {
+/* ---------- Sidebar Content (shared mobile / desktop) ---------- */
+const SidebarContent = ({
+  user,
+  activeSection,
+  onLogout,
+  onSectionChange,
+  setIsOpen,
+}: {
   user: User;
   activeSection: string;
   onLogout: () => void;
@@ -41,56 +48,53 @@ const SidebarContent = ({ user, activeSection, onLogout, onSectionChange, setIsO
   setIsOpen?: (open: boolean) => void;
 }) => {
   const getMenuItems = () => {
-  switch (user.role) {
-    case UserRole.Admin: // super-admin
-      return [
-        { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-        { id: 'staff', label: 'Staff Management', icon: Users },
-        { id: 'manufacturers', label: 'Manufacturers', icon: Factory },
-        { id: 'distributors', label: 'Distributors', icon: Building2 },
-        { id: 'shipments', label: 'Shipment Receiving', icon: Package },
-        { id: 'stocks', label: 'Stocks', icon: Pill },
-      
-      ];
-    case UserRole.Sales: // sales-admin
-      return [
-        { id: 'create-order', label: 'Create Order', icon: Plus },
-        { id: 'orders', label: 'Orders & Payments', icon: FileText },
-      ];
-    case UserRole.Warehouse: // warehouse-admin
-      return [
-        { id: 'inventory', label: 'Inventory Management', icon: Warehouse },
-        { id: 'shipments', label: 'Shipment Receiving', icon: Package },
-        { id: 'stocks', label: 'Stocks', icon: Pill },
-      ];
-    case UserRole.Finance: // finance-admin
-      return [
-        { id: 'reports', label: 'Reports', icon: BarChart3 },
-        { id: 'approvals', label: 'Order Approvals', icon: UserCheck },
-      ];
-    default:
-      return [];
-  }
-};
-
-
-  const menuItems = getMenuItems();
+    switch (user.role) {
+      case UserRole.Admin: // super-admin
+        return [
+          { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+          { id: 'staff', label: 'Staff Management', icon: Users },
+          { id: 'manufacturers', label: 'Manufacturers', icon: Factory },
+          { id: 'distributors', label: 'Distributors', icon: Building2 },
+          { id:  'shipments', label: 'Shipment Receiving', icon: Package },
+          { id: 'stocks', label: 'Stocks', icon: Pill },
+        ];
+      case UserRole.Sales: // sales-admin
+        return [
+          { id: 'create-order', label: 'Create Order', icon: Plus },
+          { id: 'orders', label: 'Orders & Payments', icon: FileText },
+        ];
+      case UserRole.Warehouse: // warehouse-admin
+        return [
+          { id: 'inventory', label: 'Inventory Management', icon: Warehouse },
+          { id: 'shipments', label: 'Shipment Receiving', icon: Package },
+          { id: 'stocks', label: 'Stocks', icon: Pill },
+        ];
+      case UserRole.Finance: // finance-admin
+        return [
+          { id: 'reports', label: 'Reports', icon: BarChart3 },
+          { id: 'approvals', label: 'Order Approvals', icon: UserCheck },
+        ];
+      default:
+        return [];
+    }
+  };
 
   const getRoleColor = (role: string) => {
-  switch (role) {
-    case UserRole.Admin: // super-admin
-      return 'text-destructive';
-    case UserRole.Sales: // sales-admin
-      return 'text-primary';
-    case UserRole.Warehouse: // warehouse-admin
-      return 'text-secondary';
-    case UserRole.Finance: // finance-admin
-      return 'text-blue-500';
-    default:
-      return 'text-muted-foreground';
-  }
-};
+    switch (role) {
+      case UserRole.Admin:
+        return 'text-destructive';
+      case UserRole.Sales:
+        return 'text-primary';
+      case UserRole.Warehouse:
+        return 'text-primary';
+      case UserRole.Finance:
+        return 'text-blue-500';
+      default:
+        return 'text-muted-foreground';
+    }
+  };
 
+  const menuItems = getMenuItems();
 
   return (
     <div className="flex flex-col h-full">
@@ -105,20 +109,18 @@ const SidebarContent = ({ user, activeSection, onLogout, onSectionChange, setIsO
             <p className="text-xs text-muted-foreground">Healthcare Ltd</p>
           </div>
         </div>
-        <div className="flex items-center justify-between">
-          <Badge variant="outline" className={cn('text-xs capitalize', getRoleColor(user.role))}>
-            {user.role} Portal
-          </Badge>
-        </div>
+        <Badge variant="outline" className={cn('text-xs capitalize', getRoleColor(user.role))}>
+          {user.role} Portal
+        </Badge>
       </div>
-      
-      {/* Navigation Menu */}
+
+      {/* Navigation */}
       <div className="flex-1 p-4">
         <div className="space-y-1">
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeSection === item.id;
-            
+
             return (
               <Button
                 key={item.id}
@@ -135,16 +137,14 @@ const SidebarContent = ({ user, activeSection, onLogout, onSectionChange, setIsO
               >
                 <Icon className="mr-3 h-4 w-4" />
                 <span className="text-sm">{item.label}</span>
-                {isActive && (
-                  <ChevronRight className="absolute right-3 h-4 w-4 text-primary-foreground" />
-                )}
+                {isActive && <ChevronRight className="absolute right-3 h-4 w-4 text-primary-foreground" />}
               </Button>
             );
           })}
         </div>
       </div>
-      
-      {/* Settings & User Section */}
+
+      {/* Settings + User */}
       <div className="p-4 border-t border-border space-y-4">
         <Button
           variant={activeSection === 'settings' ? 'default' : 'ghost'}
@@ -160,32 +160,16 @@ const SidebarContent = ({ user, activeSection, onLogout, onSectionChange, setIsO
         >
           <Settings className="mr-3 h-4 w-4" />
           <span className="text-sm">Settings</span>
-          {activeSection === 'settings' && (
-            <ChevronRight className="absolute right-3 h-4 w-4 text-primary-foreground" />
-          )}
+          {activeSection === 'settings' && <ChevronRight className="absolute right-3 h-4 w-4 text-primary-foreground" />}
         </Button>
-        
-        {/* User Info */}
+
         <div className="space-y-3">
           <div className="px-3 py-2 bg-primary-foreground border border-primary/50 rounded-lg">
-            <p className="text-sm font-medium truncate">{user.fullname}</p>
+            <p className="text-sm font-medium truncate">{user.firstName} {user.lastName}</p>
             <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-            {/* <Badge 
-              variant="secondary" 
-              className={cn('text-xs mt-2 capitalize', getRoleColor(user.role))}
-            >
-              {user.role}
-            </Badge> */}
           </div>
-          
-          <Button 
-            variant="outline" 
-            className="w-full h-10" 
-            onClick={() => {
-              onLogout();
-              setIsOpen?.(false);
-            }}
-          >
+
+          <Button variant="outline" className="w-full h-10" onClick={() => { onLogout(); setIsOpen?.(false); }}>
             <LogOut className="mr-2 h-4 w-4" />
             <span className="text-sm">Logout</span>
           </Button>
@@ -195,60 +179,57 @@ const SidebarContent = ({ user, activeSection, onLogout, onSectionChange, setIsO
   );
 };
 
-const Sidebar = ({ user, onLogout, isOpen, setIsOpen }: SidebarProps) => {
+/* ---------- Main Sidebar Component ---------- */
+export default function Sidebar({ user, activeSection, onLogout, onSectionChange }: SidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const [activeSection, setActiveSection] = useState<string>('');
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [section, setSection] = useState(activeSection);
 
-  // Initialize activeSection based on current URL
+  // Sync active section with URL on mount / route change
   useEffect(() => {
-    const pathSegments = pathname.split('/');
-    const section = pathSegments[pathSegments.length - 1] || 'overview';
-    setActiveSection(section);
+    const segments = pathname.split('/');
+    const last = segments[segments.length - 1];
+    setSection(last || 'overview');
   }, [pathname]);
 
-  const handleSectionChange = (section: string) => {
-    setActiveSection(section);
-    router.push(`/dashboard/${user.role}/${section}`);
+  const handleSectionChange = (sec: string) => {
+    setSection(sec);
+    onSectionChange(sec);
+    router.push(`/dashboard/${user.role}/${sec}`);
   };
 
   return (
     <>
-      {/* Mobile Sidebar */}
+      {/* Mobile */}
       <div className="lg:hidden">
-        <Sheet open={isOpen} onOpenChange={setIsOpen}>
+        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetTrigger asChild>
-            <Button 
-              variant="outline" 
-              size="icon" 
-              className="fixed top-4 left-4 z-50 bg-background shadow-md"
-            >
+            <Button variant="outline" size="icon" className="fixed top-4 left-4 z-50 bg-background shadow-md">
               <Menu className="h-4 w-4" />
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="p-0 w-80">
-            <SidebarContent 
-              user={user} 
-              activeSection={activeSection} 
-              onLogout={onLogout} 
+            <SidebarContent
+              user={user}
+              activeSection={section}
+              onLogout={onLogout}
               onSectionChange={handleSectionChange}
-              setIsOpen={setIsOpen}
+              setIsOpen={setMobileOpen}
             />
           </SheetContent>
         </Sheet>
       </div>
 
-      {/* Desktop Sidebar */}
-      <div className="hidden lg:flex w-72 bg-sidebar border-r border-sidebar-border h-screen flex-col">
-        <SidebarContent 
-          user={user} 
-          activeSection={activeSection} 
-          onLogout={onLogout} 
+      {/* Desktop */}
+      <aside className="hidden lg:flex w-72 bg-sidebar border-r border-sidebar-border h-screen flex-col">
+        <SidebarContent
+          user={user}
+          activeSection={section}
+          onLogout={onLogout}
           onSectionChange={handleSectionChange}
         />
-      </div>
+      </aside>
     </>
   );
-};
-
-export default Sidebar;
+}

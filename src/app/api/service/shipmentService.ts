@@ -38,14 +38,14 @@ export interface Medicine {
   strength?: string;
   form: MedicineFormEnum;
   manufacturerId?: string;
-  manufacturer?: string; // For display purposes in UI
+  manufacturer?: string; 
   manufacturingDate?: string;
   packSize?: number;
   batchNumber?: string;
   expiryDate?: string;
-  quantity?: number;
-  unitCost?: number;
-  unitCostToBeSold?: number;
+  quantity: number;
+  unitCost: number;
+  unitCostToBeSold: number;
   createdAt?: string | Date;
   updatedAt?: string | Date;
 }

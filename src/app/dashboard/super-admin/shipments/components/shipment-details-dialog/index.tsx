@@ -338,9 +338,9 @@ export default function ShipmentDetailsDialog({
                     <span>{item.medicine.form || "N/A"}</span>
                     <span>{item.medicine.manufacturer || "N/A"}</span>
                     <span>{item.medicine.strength || "N/A"}</span>
-                    <span className="font-mono">{item.batchNumber || "N/A"}</span>
-                    <span>{item.expiryDate ? new Date(item.expiryDate).toLocaleDateString() : "N/A"}</span>
-                    <span>{item.quantity || 0} units</span>
+                    <span className="font-mono">{item.medicine.batchNumber || "N/A"}</span>
+                    <span>{item.medicine.expiryDate ? new Date(item.medicine.expiryDate).toLocaleDateString() : "N/A"}</span>
+                    <span>{item.medicine.quantity || 0} units</span>
                     <span>₦{(item.medicine.unitCost || 0).toFixed(2)}</span>
                   </div>
                 ))}
