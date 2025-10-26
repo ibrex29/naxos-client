@@ -1,12 +1,20 @@
 'use client';
 
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+
 export default function Home() {
-  // const router = useRouter();
+  const router = useRouter();
 
-  // const handleRoleSelect = (role: UserRole) => {
-  //   router.push(`/dashboard/${role}`);
-  // };
+  useEffect(() => {
+    // Redirect to sign-in immediately
+    router.replace('/signin');
+  }, [router]);
 
-  // return <RoleSelector onRoleSelect={handleRoleSelect} />;
-  return <h1 className="text-3xl font-bold underline">Hello world!</h1>;
+  // Optional: show a brief loading state
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <p className="text-lg text-muted-foreground">Redirecting to sign in...</p>
+    </div>
+  );
 }
