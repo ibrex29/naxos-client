@@ -1,3 +1,4 @@
+import { ShipmentDisplay } from "@/types/shipment";
 import authApi from "@/utils/authApi";
 
 export type SortField = "proformaInvoiceNo" | "supplier" | "createdAt" | "billOfLading" | "shipmentMode" | undefined;
@@ -31,6 +32,18 @@ export interface ShipmentDocument {
   insurance?: string;
   insuranceName?: string;
 }
+export interface Manufacturer {
+  id: string;
+  name: string;
+  code: string;
+  countryOfOrigin: string | null;
+  contactEmail?: string;
+  contactPhone?: string;
+  address?: string;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
 
 export interface Medicine {
   id?: string;
@@ -38,7 +51,7 @@ export interface Medicine {
   strength?: string;
   form: MedicineFormEnum;
   manufacturerId?: string;
-  manufacturer?: string; 
+  manufacturer?: Manufacturer; 
   manufacturingDate?: string;
   packSize?: number;
   batchNumber?: string;
@@ -95,7 +108,7 @@ export interface ShipmentQueryParams {
 }
 
 export interface ShipmentResponse {
-  data: Shipment[];
+  data: ShipmentDisplay[];
   meta: {
     page: number;
     limit: number;

@@ -20,6 +20,7 @@ import 'react-loading-skeleton/dist/skeleton.css';
 import { UserQueryParams, User } from '@/app/api/service/userService';
 import { useUsers, useUserManagement, useStaffSummary } from '@/hooks/use-users';
 import { UserRole } from '@/types/enum';
+import { Eye, EyeOff } from "lucide-react";
 
 interface FormData {
   fullname: string;
@@ -252,88 +253,107 @@ const StaffForm: React.FC<{
   onCancel: () => void;
   isEditMode?: boolean;
   isLoading: boolean;
-}> = ({ formData, setFormData, onSubmit, onCancel, isEditMode = false, isLoading }) => (
-  <div className="space-y-4">
-    <div className="space-y-2">
-      <Label htmlFor="fullname">Full Name *</Label>
-      <Input
-        id="fullname"
-        value={formData.fullname}
-        onChange={(e) => setFormData({ ...formData, fullname: e.target.value })}
-        placeholder="Enter full name"
-      />
-    </div>
-    <div className="grid grid-cols-2 gap-4">
+}> = ({ formData, setFormData, onSubmit, onCancel, isEditMode = false, isLoading }) => {
+  const [showPassword, setShowPassword] = useState(false);
+  return (
+    <div className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="email">Email Address *</Label>
+        <Label htmlFor="fullname">Full Name *</Label>
         <Input
-          id="email"
-          type="email"
-          value={formData.email}
-          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-          placeholder="Enter email address"
+          id="fullname"
+          value={formData.fullname}
+          onChange={(e) => setFormData({ ...formData, fullname: e.target.value })}
+          placeholder="Enter full name"
         />
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="email">Email Address *</Label>
+          <Input
+            id="email"
+            type="email"
+            value={formData.email}
+            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            placeholder="Enter email address"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="phone">Phone</Label>
+          <Input
+            id="phone"
+            value={formData.phone}
+            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+            placeholder="Enter phone number"
+          />
+        </div>
+      </div>
+      {!isEditMode && (
+        <div className="space-y-2">
+          <Label htmlFor="password">Password *</Label>
+          <div className="relative">
+            <Input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              placeholder="Enter password"
+              className="pr-10"
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? (
+                <EyeOff className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <Eye className="h-4 w-4 text-muted-foreground" />
+              )}
+            </Button>
+          </div>
+        </div>
+      )}
+      <div className="space-y-2">
+        <Label>Role</Label>
+        <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value as UserRole })}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {['super-admin', 'admin', 'sales-admin', 'warehouse-admin', 'finance-admin'].map((role) => (
+              <SelectItem key={role} value={role}>
+                {role.replace('-', ' ').toUpperCase()}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       <div className="space-y-2">
-        <Label htmlFor="phone">Phone</Label>
-        <Input
-          id="phone"
-          value={formData.phone}
-          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-          placeholder="Enter phone number"
-        />
+        <Label>Status</Label>
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="isActive"
+            checked={formData.isActive}
+            onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked as boolean })}
+          />
+          <Label htmlFor="isActive" className="text-sm font-medium">
+            Active
+          </Label>
+        </div>
+      </div>
+      <div className="flex justify-end space-x-2 pt-4">
+        <Button variant="outline" onClick={onCancel} disabled={isLoading}>
+          Cancel
+        </Button>
+        <Button onClick={onSubmit} disabled={isLoading}>
+          {isLoading ? (isEditMode ? 'Updating...' : 'Adding...') : isEditMode ? 'Update Staff' : 'Add Staff'}
+        </Button>
       </div>
     </div>
-    {!isEditMode && (
-      <div className="space-y-2">
-        <Label htmlFor="password">Password *</Label>
-        <Input
-          id="password"
-          type="password"
-          value={formData.password}
-          onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-          placeholder="Enter password"
-        />
-      </div>
-    )}
-    <div className="space-y-2">
-      <Label>Role</Label>
-      <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value as UserRole })}>
-        <SelectTrigger>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {['super-admin', 'admin', 'sales-admin', 'warehouse-admin', 'finance-admin'].map((role) => (
-            <SelectItem key={role} value={role}>
-              {role.replace('-', ' ').toUpperCase()}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
-    <div className="space-y-2">
-      <Label>Status</Label>
-      <div className="flex items-center space-x-2">
-        <Checkbox
-          id="isActive"
-          checked={formData.isActive}
-          onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked as boolean })}
-        />
-        <Label htmlFor="isActive" className="text-sm font-medium">
-          Active
-        </Label>
-      </div>
-    </div>
-    <div className="flex justify-end space-x-2 pt-4">
-      <Button variant="outline" onClick={onCancel} disabled={isLoading}>
-        Cancel
-      </Button>
-      <Button onClick={onSubmit} disabled={isLoading}>
-        {isLoading ? (isEditMode ? 'Updating...' : 'Adding...') : isEditMode ? 'Update Staff' : 'Add Staff'}
-      </Button>
-    </div>
-  </div>
-);
+  )
+};
 
 const StaffManagement: React.FC = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);

@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { DeliveryStatus, FilterDeliveryStatus, FilterStatus, Shipment, SortField, FilterShipmentMode } from "@/app/api/service/shipmentService";
+import { DeliveryStatus, FilterDeliveryStatus, FilterStatus, SortField, FilterShipmentMode } from "@/app/api/service/shipmentService";
 import { useShipments, useShipmentManagement } from "@/hooks/use-shipment-management";
 
 import toast from "react-hot-toast";
@@ -13,6 +13,7 @@ import ShipmentsTable from "./components/shipments-table";
 import StatsCards from "./components/stats-card";
 import Header from "./components/header";
 import { Badge } from "@/components/ui/badge";
+import { ShipmentDisplay } from "@/types/shipment";
 
 export default function ShipmentAdmin() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -23,7 +24,7 @@ export default function ShipmentAdmin() {
   const [shipmentModeFilter, setShipmentModeFilter] = useState<FilterShipmentMode>("all");
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
-  const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
+  const [selectedShipment, setSelectedShipment] = useState<ShipmentDisplay | null>(null);
   const [exportFormat, setExportFormat] = useState<"csv" | "pdf" | "docx" | "xlsx">("csv");
 
   // Fetch shipments with React Query

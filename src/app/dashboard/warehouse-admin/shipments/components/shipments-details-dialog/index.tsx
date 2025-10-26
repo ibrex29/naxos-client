@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Download } from "lucide-react";
-import { Shipment, DeliveryStatus } from "@/app/api/service/shipmentService";
+import { DeliveryStatus } from "@/app/api/service/shipmentService";
 import { getFileName } from "@/utils/utils";
 import jsPDF from "jspdf";
 import { Document, Packer, Paragraph, Table as DocxTable, TableCell as DocxTableCell, TableRow as DocxTableRow, WidthType } from "docx";
@@ -13,10 +13,11 @@ import "jspdf-autotable";
 import toast from "react-hot-toast";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Clock, Truck } from "lucide-react";
+import { ShipmentDisplay } from "@/types/shipment";
 
 interface ShipmentDetailsDialogProps {
-  selectedShipment: Shipment | null;
-  setSelectedShipment: (shipment: Shipment | null) => void;
+  selectedShipment: ShipmentDisplay | null;
+  setSelectedShipment: (shipment: ShipmentDisplay | null) => void;
   exportFormat: "csv" | "pdf" | "docx" | "xlsx";
   setExportFormat: (value: "csv" | "pdf" | "docx" | "xlsx") => void;
 }
@@ -62,7 +63,7 @@ export default function ShipmentDetailsDialog({
     }
   };
 
-  const exportShipmentData = (shipment: Shipment) => {
+  const exportShipmentData = (shipment: ShipmentDisplay) => {
     const fileName = `shipment-${shipment.id}`;
     const headers = [
       "Medicine",
@@ -79,13 +80,13 @@ export default function ShipmentDetailsDialog({
     const data = shipment.items.map((item) => [
       item.medicine.name || "Unknown",
       item.medicine.form || "N/A",
-      item.medicine?.manufacturer || undefined,
+      item.medicine.manufacturer?.name || undefined,
       item.medicine.strength || "N/A",
-      item.medicine.batchNumber || "N/A",
-      item.medicine.expiryDate || "N/A",
-      item.medicine.quantity || 0,
-      item.medicine.unitCost || 0,
-      item.medicine.unitCostToBeSold || "N/A",
+      item.batchNumber || "N/A",
+      item.expiryDate || "N/A",
+      item.quantity || 0,
+      item.unitCost || 0,
+      item.unitCostToBeSold || "N/A",
       shipment.shipmentMode,
     ]);
 
@@ -337,7 +338,7 @@ export default function ShipmentDetailsDialog({
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Total Quantity:</span>
                     <span>
-                      {selectedShipment.items.reduce((sum, item) => sum + (item.medicine.quantity || 0), 0)} units
+                      {selectedShipment.items.reduce((sum, item) => sum + (item.quantity || 0), 0)} units
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -345,7 +346,7 @@ export default function ShipmentDetailsDialog({
                     <span>
                       ₦
                       {selectedShipment.items
-                        .reduce((sum, item) => sum + (item.medicine.quantity || 0) * (item.medicine.unitCost || 0), 0)
+                        .reduce((sum, item) => sum + (item.quantity || 0) * (item.unitCost || 0), 0)
                         .toLocaleString()}
                     </span>
                   </div>
@@ -369,12 +370,12 @@ export default function ShipmentDetailsDialog({
                   <div key={index} className="grid grid-cols-8 gap-4 p-3 border-t text-sm">
                     <span>{item.medicine.name || "Unknown"}</span>
                     <span>{item.medicine.form || "N/A"}</span>
-                    <span>{item.medicine.manufacturer || "N/A"}</span>
+                    <span>{item.medicine.manufacturer?.name || undefined}</span>
                     <span>{item.medicine.strength || "N/A"}</span>
-                    <span className="font-mono">{item.medicine.batchNumber || "N/A"}</span>
-                    <span>{item.medicine.expiryDate ? new Date(item.medicine.expiryDate).toLocaleDateString() : "N/A"}</span>
-                    <span>{item.medicine.quantity || 0} units</span>
-                    <span>₦{(item.medicine.unitCost || 0).toFixed(2)}</span>
+                    <span className="font-mono">{item.batchNumber || "N/A"}</span>
+                    <span>{item.expiryDate ? new Date(item.expiryDate).toLocaleDateString() : "N/A"}</span>
+                    <span>{item.quantity || 0} units</span>
+                    <span>₦{(item.unitCost || 0).toFixed(2)}</span>
                   </div>
                 ))}
               </div>

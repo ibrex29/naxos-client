@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Package, FileText, Truck, Calendar, Download, ChevronLeft, ChevronRight } from 'lucide-react';
-import { Shipment, DeliveryStatus } from '@/app/api/service/shipmentService';
+import {  DeliveryStatus } from '@/app/api/service/shipmentService';
 import jsPDF from 'jspdf';
 import { Document, Packer, Paragraph, Table as DocxTable, TableCell as DocxTableCell, TableRow as DocxTableRow, WidthType } from 'docx';
 import * as XLSX from 'xlsx';
@@ -13,13 +13,14 @@ import 'jspdf-autotable';
 import toast from 'react-hot-toast';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, Clock, Truck as TruckIcon } from 'lucide-react';
+import { ShipmentDisplay } from '@/types/shipment';
 
 // Interfaces
 interface ShipmentListProps {
-  shipments: Shipment[];
+  shipments: ShipmentDisplay[];
   meta: { itemCount: number; page: number; limit: number; pageCount: number; hasPreviousPage: boolean; hasNextPage: boolean };
   isLoading: boolean;
-  setSelectedShipment: (shipment: Shipment | null) => void;
+  setSelectedShipment: (shipment: ShipmentDisplay | null) => void;
   exportFormat: 'csv' | 'pdf' | 'docx' | 'xlsx';
   setExportFormat: (value: 'csv' | 'pdf' | 'docx' | 'xlsx') => void;
   page: number;
@@ -27,13 +28,13 @@ interface ShipmentListProps {
 }
 
 interface ShipmentCardProps {
-  shipment: Shipment;
+  shipment: ShipmentDisplay;
   getStatusBadge: (status: DeliveryStatus) => JSX.Element;
   getCustomClasses: (status: DeliveryStatus) => string;
-  setSelectedShipment: (shipment: Shipment) => void;
+  setSelectedShipment: (shipment: ShipmentDisplay) => void;
   exportFormat: 'csv' | 'pdf' | 'docx' | 'xlsx';
   setExportFormat: (value: 'csv' | 'pdf' | 'docx' | 'xlsx') => void;
-  onExport: (shipment: Shipment) => void;
+  onExport: (shipment: ShipmentDisplay) => void;
 }
 
 interface ShipmentPaginationProps {
@@ -88,7 +89,7 @@ const getCustomClasses = (status: DeliveryStatus): string => {
   }
 };
 
-const exportShipmentData = (shipment: Shipment, exportFormat: 'csv' | 'pdf' | 'docx' | 'xlsx') => {
+const exportShipmentData = (shipment: ShipmentDisplay, exportFormat: 'csv' | 'pdf' | 'docx' | 'xlsx') => {
   const fileName = `shipment-${shipment.id}`;
   const headers = [
     'Medicine',
@@ -105,13 +106,13 @@ const exportShipmentData = (shipment: Shipment, exportFormat: 'csv' | 'pdf' | 'd
   const data = shipment.items.map((item) => [
     item.medicine.name || 'Unknown',
     item.medicine.form || 'N/A',
-    item.medicine.manufacturer || 'N/A',
+    item.medicine.manufacturer?.name || undefined,
     item.medicine.strength || 'N/A',
-    item.medicine.batchNumber || 'N/A',
-    item.medicine.expiryDate || 'N/A',
-    item.medicine.quantity || 0,
-    item.medicine.unitCost || 0,
-    item.medicine.unitCostToBeSold || 'N/A',
+    item.batchNumber || 'N/A',
+    item.expiryDate || 'N/A',
+    item.quantity || 0,
+    item.unitCost || 0,
+    item.unitCostToBeSold || 'N/A',
     shipment.shipmentMode,
   ]);
 
@@ -296,7 +297,7 @@ const ShipmentCard: React.FC<ShipmentCardProps> = ({
               <div key={index} className="flex justify-between bg-muted/30 rounded p-2">
                 <span>{item.medicine.name || 'Unknown'} ({item.medicine.form || 'N/A'})</span>
                 <span className="text-muted-foreground">
-                  {item.medicine.quantity || 0} units | Batch: {item.medicine.batchNumber || 'N/A'}
+                  {item.quantity || 0} units | Batch: {item.batchNumber || 'N/A'}
                 </span>
               </div>
             ))}
@@ -369,7 +370,7 @@ export default function ShipmentList({
   page,
   setPage,
 }: ShipmentListProps): JSX.Element {
-  const handleExport = useCallback((shipment: Shipment) => {
+  const handleExport = useCallback((shipment: ShipmentDisplay) => {
     exportShipmentData(shipment, exportFormat);
   }, [exportFormat]);
 

@@ -1,10 +1,10 @@
 import { JSX } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Package, Clock, CheckCircle, Truck } from "lucide-react";
-import { Shipment } from "@/app/api/service/shipmentService";
+import { ShipmentDisplay } from "@/types/shipment";
 
 interface StatsCardsProps {
-  shipments: Shipment[];
+  shipments: ShipmentDisplay[];
   meta: { itemCount: number; page: number; limit: number; pageCount: number; hasPreviousPage: boolean; hasNextPage: boolean };
 }
 

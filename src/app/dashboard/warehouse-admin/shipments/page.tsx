@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, ChangeEvent } from "react";
-import { Shipment, SortField, FilterStatus, FilterDeliveryStatus, FilterShipmentMode, ShipmentMode, ShipmentDocument, ShipmentItem } from "@/app/api/service/shipmentService";
+import {  SortField, FilterStatus, FilterDeliveryStatus, FilterShipmentMode, ShipmentMode, ShipmentDocument, ShipmentItem } from "@/app/api/service/shipmentService";
 import { useShipments, useShipmentManagement } from "@/hooks/use-shipment-management";
 import { useManufacturers } from "@/hooks/use-manufacturer";
 
@@ -13,6 +13,7 @@ import SearchAndFilters from "./components/search-filter";
 import ShipmentList from "./components/shipments-list";
 import AddShipmentDialog from "./components/add-shipment-dialog";
 import ShipmentDetailsDialog from "./components/shipments-details-dialog";
+import { ShipmentDisplay } from "@/types/shipment";
 
 export default function ShipmentReceiving() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -24,7 +25,7 @@ export default function ShipmentReceiving() {
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
+  const [selectedShipment, setSelectedShipment] = useState<ShipmentDisplay | null>(null);
   const [newShipmentItems, setNewShipmentItems] = useState<ShipmentItem[]>([]);
   const [invoiceDoc, setInvoiceDoc] = useState<Array<{ url: string; fileName: string }>>([]);
   const [qualityCheck, setQualityCheck] = useState<Array<{ url: string; fileName: string }>>([]);
