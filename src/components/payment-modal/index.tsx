@@ -80,9 +80,6 @@ export function PaymentModal({ open, onClose, order, onPaymentSuccess, createPay
         salesOrderId: order.id,
         documents
       };
-
-      console.log(paymentData);
-
       // Call the createPayment mutation
       const paymentResponse = await createPayment.mutateAsync(paymentData);
 

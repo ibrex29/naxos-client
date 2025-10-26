@@ -1,25 +1,45 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { JSX } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Download, CheckCircle, Clock, Truck } from "lucide-react";
 import { DeliveryStatus } from "@/app/api/service/shipmentService";
 import { getFileName } from "@/utils/utils";
 import jsPDF from "jspdf";
-import { Document, Packer, Paragraph, Table as DocxTable, TableCell as DocxTableCell, TableRow as DocxTableRow, WidthType } from "docx";
+import {
+  Document,
+  Packer,
+  Paragraph,
+  Table as DocxTable,
+  TableCell as DocxTableCell,
+  TableRow as DocxTableRow,
+  WidthType,
+} from "docx";
 import * as XLSX from "xlsx";
 import "jspdf-autotable";
 import toast from "react-hot-toast";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Clock, Truck } from "lucide-react";
 import { ShipmentDisplay } from "@/types/shipment";
+
+type ExportFormat = "csv" | "pdf" | "docx" | "xlsx";
 
 interface ShipmentDetailsDialogProps {
   selectedShipment: ShipmentDisplay | null;
   setSelectedShipment: (shipment: ShipmentDisplay | null) => void;
-  exportFormat: "csv" | "pdf" | "docx" | "xlsx";
-  setExportFormat: (value: "csv" | "pdf" | "docx" | "xlsx") => void;
+  exportFormat: ExportFormat;
+  setExportFormat: (value: ExportFormat) => void;
 }
 
 export default function ShipmentDetailsDialog({
@@ -65,6 +85,8 @@ export default function ShipmentDetailsDialog({
 
   const exportShipmentData = (shipment: ShipmentDisplay) => {
     const fileName = `shipment-${shipment.id}`;
+
+    // Headers with Unit Cost To Be Sold
     const headers = [
       "Medicine",
       "Form",
@@ -74,138 +96,163 @@ export default function ShipmentDetailsDialog({
       "Expiry Date",
       "Quantity",
       "Unit Cost",
-      "Unit Cost To Be Sold",
+      "Unit Cost To Be Sold",   // NEW
       "Shipment Mode",
     ];
+
     const data = shipment.items.map((item) => [
-      item.medicine.name || "Unknown",
-      item.medicine.form || "N/A",
-      item.medicine.manufacturer?.name || undefined,
-      item.medicine.strength || "N/A",
-      item.batchNumber || "N/A",
-      item.expiryDate || "N/A",
-      item.quantity || 0,
-      item.unitCost || 0,
-      item.unitCostToBeSold || "N/A",
+      item.medicine.name ?? "Unknown",
+      item.medicine.form ?? "N/A",
+      item.medicine.manufacturer?.name ?? "—",
+      item.medicine.strength ?? "N/A",
+      item.batchNumber ?? "N/A",
+      item.expiryDate
+        ? new Date(item.expiryDate).toLocaleDateString()
+        : "N/A",
+      item.quantity ?? 0,
+      item.unitCost ?? 0,
+      item.unitCostToBeSold ?? 0,   // NEW
       shipment.shipmentMode,
     ]);
 
-    switch (exportFormat) {
-      case "csv": {
-        const csvContent =
-          "data:text/csv;charset=utf-8," +
-          headers.join(",") +
-          "\n" +
-          data.map((row) => row.map((cell) => `"${cell}"`).join(",")).join("\n");
+    // ───── CSV ─────
+    if (exportFormat === "csv") {
+      const csv =
+        "data:text/csv;charset=utf-8," +
+        headers.join(",") +
+        "\n" +
+        data
+          .map((row) =>
+            row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")
+          )
+          .join("\n");
 
-        const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.href = encodeURI(csv);
+      link.download = `${fileName}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      return;
+    }
+
+    // ───── PDF ─────
+    if (exportFormat === "pdf") {
+      const doc = new jsPDF();
+      doc.setFontSize(16);
+      doc.text(`Shipment: ${shipment.proformaInvoiceNo}`, 20, 20);
+      doc.setFontSize(12);
+      doc.text(`Supplier: ${shipment.supplier}`, 20, 30);
+      doc.text(
+        `Received: ${new Date(shipment.receivedDate).toLocaleDateString()}`,
+        20,
+        40
+      );
+      doc.text(`Mode: ${shipment.shipmentMode}`, 20, 50);
+
+      const body = data.map((r) => r.map(String));
+      (doc as any).autoTable({
+        head: [headers],
+        body,
+        startY: 60,
+        theme: "grid",
+        styles: { fontSize: 9 },
+        headStyles: { fillColor: [59, 130, 246] },
+        columnStyles: { 8: { cellWidth: 28 } }, // fit "Unit Cost To Be Sold"
+      });
+
+      doc.save(`${fileName}.pdf`);
+      return;
+    }
+
+    // ───── DOCX ─────
+    if (exportFormat === "docx") {
+      const doc = new Document({
+        sections: [
+          {
+            children: [
+              new Paragraph({
+                text: `Shipment: ${shipment.proformaInvoiceNo}`,
+                heading: "Heading1",
+              }),
+              new Paragraph(`Supplier: ${shipment.supplier}`),
+              new Paragraph(
+                `Received: ${new Date(shipment.receivedDate).toLocaleDateString()}`
+              ),
+              new Paragraph(`Mode: ${shipment.shipmentMode}`),
+              new Paragraph({ text: "", spacing: { after: 200 } }),
+
+              new DocxTable({
+                width: { size: 100, type: WidthType.PERCENTAGE },
+                rows: [
+                  new DocxTableRow({
+                    children: headers.map(
+                      (h) =>
+                        new DocxTableCell({
+                          children: [new Paragraph(h)],
+                          width: {
+                            size: 100 / headers.length,
+                            type: WidthType.PERCENTAGE,
+                          },
+                        })
+                    ),
+                  }),
+                  ...data.map(
+                    (row) =>
+                      new DocxTableRow({
+                        children: row.map(
+                          (cell) =>
+                            new DocxTableCell({
+                              children: [new Paragraph(String(cell))],
+                              width: {
+                                size: 100 / headers.length,
+                                type: WidthType.PERCENTAGE,
+                              },
+                            })
+                        ),
+                      })
+                  ),
+                ],
+              }),
+            ],
+          },
+        ],
+      });
+
+      Packer.toBlob(doc).then((blob) => {
         const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `${fileName}.csv`);
+        link.href = URL.createObjectURL(blob);
+        link.download = `${fileName}.docx`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        break;
-      }
-      case "pdf": {
-        const doc = new jsPDF();
-        doc.setFontSize(16);
-        doc.text(`Shipment: ${shipment.proformaInvoiceNo}`, 20, 20);
-        doc.setFontSize(12);
-        doc.text(`Supplier: ${shipment.supplier}`, 20, 30);
-        doc.text(`Received Date: ${new Date(shipment.receivedDate).toLocaleDateString()}`, 20, 40);
-        doc.text(`Shipment Mode: ${shipment.shipmentMode}`, 20, 50);
-
-        const tableData = data.map((row) => row.map((cell) => String(cell)));
-        (doc as any).autoTable({
-          head: [headers],
-          body: tableData,
-          startY: 60,
-          theme: "grid",
-          styles: { fontSize: 10 },
-          headStyles: { fillColor: [59, 130, 246] },
-        });
-
-        doc.save(`${fileName}.pdf`);
-        break;
-      }
-      case "docx": {
-        const doc = new Document({
-          sections: [
-            {
-              children: [
-                new Paragraph({
-                  text: `Shipment: ${shipment.proformaInvoiceNo}`,
-                  heading: "Heading1",
-                }),
-                new Paragraph(`Supplier: ${shipment.supplier}`),
-                new Paragraph(`Received Date: ${new Date(shipment.receivedDate).toLocaleDateString()}`),
-                new Paragraph(`Shipment Mode: ${shipment.shipmentMode}`),
-                new Paragraph({ text: "", spacing: { after: 200 } }),
-                new DocxTable({
-                  rows: [
-                    new DocxTableRow({
-                      children: headers.map(
-                        (header) =>
-                          new DocxTableCell({
-                            children: [new Paragraph(header)],
-                            width: { size: 100 / headers.length, type: WidthType.PERCENTAGE },
-                          })
-                      ),
-                    }),
-                    ...data.map(
-                      (row) =>
-                        new DocxTableRow({
-                          children: row.map(
-                            (cell) =>
-                              new DocxTableCell({
-                                children: [new Paragraph(String(cell))],
-                                width: { size: 100 / headers.length, type: WidthType.PERCENTAGE },
-                              })
-                          ),
-                        })
-                    ),
-                  ],
-                  width: { size: 100, type: WidthType.PERCENTAGE },
-                }),
-              ],
-            },
-          ],
-        });
-
-        Packer.toBlob(doc).then((blob) => {
-          const link = document.createElement("a");
-          link.href = URL.createObjectURL(blob);
-          link.download = `${fileName}.docx`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-        });
-        break;
-      }
-      case "xlsx": {
-        const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Shipment");
-        XLSX.writeFile(wb, `${fileName}.xlsx`);
-        break;
-      }
-      default:
-        toast.error("Unsupported export format");
+      });
+      return;
     }
+
+    // ───── XLSX ─────
+    if (exportFormat === "xlsx") {
+      const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Shipment");
+      XLSX.writeFile(wb, `${fileName}.xlsx`);
+      return;
+    }
+
+    toast.error("Unsupported export format");
   };
 
   return (
     <Dialog open={!!selectedShipment} onOpenChange={() => setSelectedShipment(null)}>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="max-w-5xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
+          <DialogTitle className="mt-4 flex items-center justify-between">
             <span>Shipment Details: {selectedShipment?.proformaInvoiceNo}</span>
             {selectedShipment && (
               <div className="flex items-center gap-2">
                 <Select
                   value={exportFormat}
-                  onValueChange={(value) => setExportFormat(value as "csv" | "pdf" | "docx" | "xlsx")}
+                  onValueChange={(v) => setExportFormat(v as ExportFormat)}
                 >
                   <SelectTrigger className="w-[120px]">
                     <SelectValue placeholder="Format" />
@@ -230,48 +277,46 @@ export default function ShipmentDetailsDialog({
             )}
           </DialogTitle>
         </DialogHeader>
+
         {selectedShipment && (
           <div className="space-y-6">
+            {/* Shipment Info + Documents */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
                 <div>
                   <h4 className="font-medium mb-2">Shipment Information</h4>
                   <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Proforma Invoice:</span>
-                      <span>{selectedShipment.proformaInvoiceNo}</span>
+                      {(() => {
+                        const info: [string, string | JSX.Element][] = [
+                          ["Proforma Invoice", selectedShipment.proformaInvoiceNo],
+                          ["Bill of Lading", selectedShipment.billOfLading],
+                          ["Supplier", selectedShipment.supplier],
+                          [
+                            "Received Date",
+                            new Date(selectedShipment.receivedDate).toLocaleDateString(),
+                          ],
+                          ["Shipment Mode", selectedShipment.shipmentMode],
+                          ["Status", getStatusBadge(selectedShipment.deliveryStatus)],
+                          [
+                            "Created By",
+                            `${selectedShipment.createdBy?.email ?? ""}`.trim(),
+                          ],
+                        ];
+                        return info.map(([label, value]) => (
+                          <div key={label} className="flex justify-between">
+                            <span className="text-muted-foreground">{label}:</span>
+                            <span>{value}</span>
+                          </div>
+                        ));
+                      })()}
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Bill of Lading:</span>
-                      <span>{selectedShipment.billOfLading}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Supplier:</span>
-                      <span>{selectedShipment.supplier}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Received Date:</span>
-                      <span>{new Date(selectedShipment.receivedDate).toLocaleDateString()}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Shipment Mode:</span>
-                      <span>{selectedShipment.shipmentMode}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Status:</span>
-                      {getStatusBadge(selectedShipment.deliveryStatus)}
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Created By:</span>
-                      <span>{selectedShipment.createdBy?.profile.firstName} {selectedShipment.createdBy?.profile.lastName}</span>
-                    </div>
-                  </div>
                 </div>
+
                 <div>
                   <h4 className="font-medium mb-2">Documents</h4>
                   {selectedShipment.documents.length === 0 ? (
                     <p className="text-sm text-muted-foreground">
-                      No documents attached to this shipment.
+                      No documents attached.
                     </p>
                   ) : (
                     <div className="space-y-3">
@@ -285,38 +330,49 @@ export default function ShipmentDetailsDialog({
                           doc.qualityCheck && {
                             label: "Quality Check",
                             url: doc.qualityCheck,
-                            name: doc.qualityCheckName ?? getFileName(doc.qualityCheck),
+                            name:
+                              doc.qualityCheckName ?? getFileName(doc.qualityCheck),
                           },
                           doc.packingList && {
                             label: "Packing List",
                             url: doc.packingList,
-                            name: doc.packingListName ?? getFileName(doc.packingList),
+                            name:
+                              doc.packingListName ?? getFileName(doc.packingList),
                           },
                           doc.insurance && {
                             label: "Insurance",
                             url: doc.insurance,
                             name: doc.insuranceName ?? getFileName(doc.insurance),
                           },
-                        ].filter(Boolean) as { label: string; url: string; name: string }[];
+                        ].filter(Boolean) as {
+                          label: string;
+                          url: string;
+                          name: string;
+                        }[];
 
                         return (
                           <div key={idx} className="space-y-2">
-                            {entries.map((entry) => (
+                            {entries.map((e) => (
                               <div
-                                key={entry.label}
+                                key={e.label}
                                 className="flex items-center justify-between text-sm border-b pb-2 last:border-0"
                               >
-                                <span className="text-muted-foreground">{entry.label}:</span>
+                                <span className="text-muted-foreground">
+                                  {e.label}:
+                                </span>
                                 <a
-                                  href={entry.url}
-                                  download={entry.name}
+                                  href={e.url}
+                                  download={e.name}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="flex items-center gap-2 text-blue-600 hover:underline"
                                 >
                                   <Download className="h-4 w-4" />
-                                  <span className="truncate max-w-[140px]">
-                                    {entry.name}
+                                  <span
+                                    className="truncate max-w-[140px]"
+                                    title={e.name}
+                                  >
+                                    {e.name}
                                   </span>
                                 </a>
                               </div>
@@ -328,6 +384,8 @@ export default function ShipmentDetailsDialog({
                   )}
                 </div>
               </div>
+
+              {/* Summary */}
               <div>
                 <h4 className="font-medium mb-2">Summary</h4>
                 <div className="space-y-2 text-sm">
@@ -338,44 +396,78 @@ export default function ShipmentDetailsDialog({
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Total Quantity:</span>
                     <span>
-                      {selectedShipment.items.reduce((sum, item) => sum + (item.quantity || 0), 0)} units
+                      {selectedShipment.items.reduce(
+                        (s, i) => s + (i.quantity ?? 0),
+                        0
+                      )}{" "}
+                      units
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Total Value:</span>
+                    <span className="text-muted-foreground">Total Cost Price:</span>
                     <span>
-                      ₦
+                      NGN
                       {selectedShipment.items
-                        .reduce((sum, item) => sum + (item.quantity || 0) * (item.unitCost || 0), 0)
+                        .reduce(
+                          (s, i) => s + (i.quantity ?? 0) * (i.unitCost ?? 0),
+                          0
+                        )
+                        .toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Total Selling Price:</span>
+                    <span className="text-green-700 font-medium">
+                      NGN
+                      {selectedShipment.items
+                        .reduce(
+                          (s, i) =>
+                            s + (i.quantity ?? 0) * (i.unitCostToBeSold ?? 0),
+                          0
+                        )
                         .toLocaleString()}
                     </span>
                   </div>
                 </div>
               </div>
             </div>
+
+            {/* Items Table – 9 columns */}
             <div>
               <h4 className="font-medium mb-4">Items in Shipment</h4>
               <div className="border rounded-lg overflow-hidden overflow-x-auto">
-                <div className="grid grid-cols-8 gap-4 p-3 bg-muted/50 text-sm font-medium">
+                <div className="grid grid-cols-9 gap-4 p-3 bg-muted/50 text-sm font-medium">
                   <span>Medicine</span>
                   <span>Form</span>
                   <span>Manufacturer</span>
                   <span>Strength</span>
-                  <span>Batch Number</span>
-                  <span>Expiry Date</span>
-                  <span>Quantity</span>
+                  <span>Batch</span>
+                  <span>Expiry</span>
+                  <span>Qty</span>
                   <span>Unit Cost</span>
+                  <span>Unit Cost To Sell</span>
                 </div>
-                {selectedShipment.items.map((item, index) => (
-                  <div key={index} className="grid grid-cols-8 gap-4 p-3 border-t text-sm">
-                    <span>{item.medicine.name || "Unknown"}</span>
-                    <span>{item.medicine.form || "N/A"}</span>
-                    <span>{item.medicine.manufacturer?.name || undefined}</span>
-                    <span>{item.medicine.strength || "N/A"}</span>
-                    <span className="font-mono">{item.batchNumber || "N/A"}</span>
-                    <span>{item.expiryDate ? new Date(item.expiryDate).toLocaleDateString() : "N/A"}</span>
-                    <span>{item.quantity || 0} units</span>
-                    <span>₦{(item.unitCost || 0).toFixed(2)}</span>
+
+                {selectedShipment.items.map((item) => (
+                  <div
+                    key={item.id}
+                    className="grid grid-cols-9 gap-4 p-3 border-t text-sm"
+                  >
+                    <span>{item.medicine.name ?? "—"}</span>
+                    <span>{item.medicine.form ?? "—"}</span>
+                    <span>{item.medicine.manufacturer?.name ?? "—"}</span>
+                    <span>{item.medicine.strength ?? "—"}</span>
+                    <span className="font-mono">{item.batchNumber ?? "—"}</span>
+                    <span>
+                      {item.expiryDate
+                        ? new Date(item.expiryDate).toLocaleDateString()
+                        : "—"}
+                    </span>
+                    <span>{item.quantity ?? 0}</span>
+                    <span>NGN{(item.unitCost ?? 0).toFixed(2)}</span>
+                    <span className="text-green-700 font-medium">
+                      NGN{(item.unitCostToBeSold ?? 0).toFixed(2)}
+                    </span>
                   </div>
                 ))}
               </div>

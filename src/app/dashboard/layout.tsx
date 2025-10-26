@@ -53,7 +53,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         onLogout={handleLogout}
         onSectionChange={setActiveSection}
       />
-      <main className="flex-1 overflow-auto p-6">{children}</main>
+      <main className="flex-1 overflow-auto p-6 mt-[36px] md:mt-0">{children}</main>
     </div>
   );
 }

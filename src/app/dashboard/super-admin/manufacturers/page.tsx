@@ -422,7 +422,7 @@ const availableCountries = (countries && countries.length > 0)
       <Dialog open={isModalOpen} onOpenChange={handleCloseModal}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{editingManufacturer ? "Edit Manufacturer" : "Add New Manufacturer"}</DialogTitle>
+            <DialogTitle className="mt-4">{editingManufacturer ? "Edit Manufacturer" : "Add New Manufacturer"}</DialogTitle>
           </DialogHeader>
 
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">

@@ -35,7 +35,6 @@ export default function FileUpload({
           'Content-Type': 'multipart/form-data',
         },
       });
-      console.log('Upload response:', response);
 
       return {
         url: response.data.fileUrl,
@@ -70,8 +69,6 @@ export default function FileUpload({
         );
 
         const updatedDocuments = multiple ? [...documents, ...newDocuments] : newDocuments;
-        console.log('New documents:', newDocuments);
-        console.log('Updated documents:', updatedDocuments);
         setDocuments(updatedDocuments);
         onFilesChange(updatedDocuments.map(({ url, fileName }) => ({ url, fileName })));
       } catch (error) {
@@ -88,9 +85,7 @@ export default function FileUpload({
     setDocuments(updatedDocuments);
     onFilesChange(updatedDocuments.map(({ url, fileName }) => ({ url, fileName })));
   };
-
-  console.log('FileUpload documents state:', documents);
-
+  
   return (
     <div>
       <div className="border-2 border-dashed border-border rounded-lg p-6">

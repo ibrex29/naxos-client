@@ -288,7 +288,6 @@ export default function CreateOrderPage() {
           unitPrice: item.unitPrice,
         })),
       };
-      console.log('Creating order with payload:', payload);
       await createSalesOrderMutation.mutateAsync(payload);
       toast({
         title: 'Success',
