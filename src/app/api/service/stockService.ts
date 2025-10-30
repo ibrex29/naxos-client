@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-empty-object-type */
 import { InventoryItem, InventoryOverview, ExpiringBatch } from '@/types/inventory';
 import authApi from '@/utils/authApi';
 
@@ -17,6 +18,8 @@ export interface InventoryQueryParams {
   page?: number;
   limit?: number;
 }
+
+export interface FifoItem extends ExpiringBatch { }
 
 // Interface for recent movements
 export interface RecentMovement {
@@ -93,5 +96,10 @@ export const fetchExpiringBatches = async (): Promise<ExpiringBatch[]> => {
 // Fetch recent movements
 export const fetchRecentMovements = async (): Promise<RecentMovement[]> => {
   const { data } = await authApi.get('/inventory/movements/recent');
+  return data;
+};
+
+export const fetchFifoQueue = async (): Promise<FifoItem[]> => {
+  const { data } = await authApi.get('/inventory/queue/fifo');
   return data;
 };

@@ -1,6 +1,7 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton'; 
 
 interface KPICardProps {
   title: string;
@@ -13,6 +14,7 @@ interface KPICardProps {
   };
   status?: 'success' | 'warning' | 'danger' | 'info';
   className?: string;
+  loading?: boolean; 
 }
 
 export function KPICard({ 
@@ -21,7 +23,8 @@ export function KPICard({
   subtitle, 
   trend, 
   status,
-  className 
+  className,
+  loading = false 
 }: KPICardProps) {
   const getTrendIcon = () => {
     switch (trend?.direction) {
@@ -59,6 +62,23 @@ export function KPICard({
         return 'border-l-transparent';
     }
   };
+
+  // skeleton loader
+  if (loading) {
+    return (
+      <Card className={cn(
+        'border-l-4',
+        getStatusColor(),
+        className
+      )}>
+        <CardContent className="p-6 space-y-3">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-8 w-32" />
+          <Skeleton className="h-3 w-20" />
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className={cn(

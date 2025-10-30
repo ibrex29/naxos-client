@@ -1,9 +1,9 @@
-
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { AlertTriangle, Clock, Package, Bell } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface AlertCardProps {
   type: 'low-stock' | 'expiry' | 'pending-approval' | 'system';
@@ -16,6 +16,7 @@ interface AlertCardProps {
     onClick: () => void;
   };
   className?: string;
+  loading?: boolean; // NEW: loading state
 }
 
 export function AlertCard({
@@ -25,7 +26,8 @@ export function AlertCard({
   priority,
   count,
   action,
-  className
+  className,
+  loading = false
 }: AlertCardProps) {
   const getIcon = () => {
     switch (type) {
@@ -62,6 +64,35 @@ export function AlertCard({
     }
   };
 
+  // Show skeleton when loading
+  if (loading) {
+    return (
+      <Card className={cn(
+        'border-l-4',
+        getBorderColor(),
+        className
+      )}>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Skeleton className="h-5 w-5 rounded-full" />
+              <Skeleton className="h-5 w-24" />
+            </div>
+            <div className="flex items-center space-x-2">
+              <Skeleton className="h-5 w-10 rounded-full" />
+              <Skeleton className="h-5 w-16 rounded-full" />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="pt-0 space-y-3">
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-3/4" />
+          <Skeleton className="h-8 w-full rounded-md" />
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className={cn(
       'border-l-4',
@@ -75,7 +106,7 @@ export function AlertCard({
             <CardTitle className="text-base">{title}</CardTitle>
           </div>
           <div className="flex items-center space-x-2">
-            {count && (
+            {count !== undefined && (
               <Badge variant="outline" className="text-xs">
                 {count}
               </Badge>

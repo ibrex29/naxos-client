@@ -4,27 +4,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { mockMedicines, mockOrders, mockSalesReports } from '@/data';
-import { 
-  Users,  
-  Clock,
-  TrendingUp,
-  Download,
-  Eye,
-  FileText
-} from 'lucide-react';
+import { Download, Eye, AlertCircle } from 'lucide-react';
 import { KPICard } from '@/components/shared/kpi-card';
 import { AlertCard } from '@/components/shared/alert-card';
+import {  useWarehouseMetrics } from '@/hooks/use-metrics';
+import { mockOrders, mockSalesReports, mockMedicines } from '@/data';
 
 export default function Overview() {
-  const lowStockCount = mockMedicines.filter(m => m.stock <= m.minThreshold).length;
+  // Fetch real inventory overview
+  const { overview: inventoryOverview, isLoadingOverview : isLoading, errorOverview: error } = useWarehouseMetrics();
+
+  // Mock data (unchanged)
   const pendingOrders = mockOrders.filter(o => o.status === 'pending').length;
   const todaysSales = mockSalesReports[0]?.totalSales || 0;
   const todaysOrders = mockSalesReports[0]?.totalOrders || 0;
-
-  // Calculate expiring stock values (mock data)
-  const expiringIn30Days = 89500;
-  const expiringIn90Days = 156000;
   const arBalance = 340000;
 
   const recentOrders = [
@@ -43,6 +36,12 @@ export default function Overview() {
     }
   };
 
+  // Use real data if available, fallback to mock
+  const totalStockValue = inventoryOverview?.totalStockValue ?? 2450000;
+  const lowStockCount = inventoryOverview?.lowStockItems ?? mockMedicines.filter(m => m.stock <= m.minThreshold).length;
+  const expiringIn30Days = inventoryOverview?.expiringSoon ?? 89500;
+  const activeItemsCount = inventoryOverview?.activeItems ?? mockMedicines.length;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -59,14 +58,25 @@ export default function Overview() {
         </div>
       </div>
 
+      {/* Error State */}
+      {error && (
+        <div className="bg-destructive/10 border border-destructive/20 p-4 rounded-lg flex items-center gap-2">
+          <AlertCircle className="h-5 w-5 text-destructive" />
+          <p className="text-sm text-destructive">
+            Failed to load inventory metrics. Using fallback data.
+          </p>
+        </div>
+      )}
+
       {/* Primary KPI Grid */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KPICard
           title="Total Stock Value"
-          value="₦2,450,000"
+          value={`₦${totalStockValue.toLocaleString()}`}
           subtitle="Current inventory worth"
           trend={{ value: 12, direction: 'up', period: 'last month' }}
           status="success"
+          loading={isLoading}
         />
         <KPICard
           title="Outstanding Orders"
@@ -80,9 +90,10 @@ export default function Overview() {
           value={`₦${expiringIn30Days.toLocaleString()}`}
           subtitle="Items expiring soon"
           status="warning"
+          loading={isLoading}
         />
         <KPICard
-          title="Account Recieveable Balance"
+          title="Account Receivable Balance"
           value={`₦${arBalance.toLocaleString()}`}
           subtitle="Outstanding receivables"
           trend={{ value: 8, direction: 'up', period: 'last month' }}
@@ -93,16 +104,18 @@ export default function Overview() {
       {/* Secondary KPIs */}
       <div className="grid gap-4 sm:grid-cols-3">
         <KPICard
-          title="Expiring Stock (90 days)"
-          value={`₦${expiringIn90Days.toLocaleString()}`}
-          subtitle="Medium-term expiry risk"
+          title="Active Items"
+          value={activeItemsCount.toString()}
+          subtitle="Total medicines in stock"
           status="info"
+          loading={isLoading}
         />
         <KPICard
           title="Low Stock Items"
           value={lowStockCount.toString()}
           subtitle="Below safety stock"
           status="warning"
+          loading={isLoading}
         />
         <KPICard
           title="Today's Sales"
@@ -120,13 +133,14 @@ export default function Overview() {
           <AlertCard
             type="expiry"
             title="Stock Expiring Soon"
-            message={`${expiringIn30Days.toLocaleString()} worth of stock will expire within 30 days. Review and plan clearance sales.`}
+            message={`₦${expiringIn30Days.toLocaleString()} worth of stock will expire within 30 days. Review and plan clearance sales.`}
             priority="high"
-            count={8}
+            count={inventoryOverview?.expiringSoon ? 8 : undefined}
             action={{
               label: "View Expiring Stock",
               onClick: () => console.log("View expiring stock")
             }}
+            loading={isLoading}
           />
           <AlertCard
             type="low-stock"
@@ -138,11 +152,12 @@ export default function Overview() {
               label: "View Low Stock",
               onClick: () => console.log("View low stock")
             }}
+            loading={isLoading}
           />
         </div>
       </div>
 
-      {/* Recent Orders and Quick Actions */}
+      {/* Recent Orders */}
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between">
@@ -172,30 +187,6 @@ export default function Overview() {
                 </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Button className="w-full justify-start" variant="outline">
-              <FileText className="h-4 w-4 mr-2" />
-              Download NAFDAC Audit Packet
-            </Button>
-            <Button className="w-full justify-start" variant="outline">
-              <Users className="h-4 w-4 mr-2" />
-              Manage Staff Permissions
-            </Button>
-            <Button className="w-full justify-start" variant="outline">
-              <TrendingUp className="h-4 w-4 mr-2" />
-              View Analytics Report
-            </Button>
-            <Button className="w-full justify-start" variant="outline">
-              <Clock className="h-4 w-4 mr-2" />
-              Review Pending Approvals
-            </Button>
           </CardContent>
         </Card>
       </div>

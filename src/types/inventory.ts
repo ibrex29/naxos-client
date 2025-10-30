@@ -12,6 +12,7 @@ export interface InventoryItem {
   createdAt: string;
   updatedAt: string;
   shipmentItems: Array<{
+    id: string;
     batchNumber: string;
     expiryDate: string;
     quantity: number;

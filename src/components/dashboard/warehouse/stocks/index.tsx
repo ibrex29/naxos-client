@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-"use client";
+/* eslint-disable @typescript-eslint/no-unused-vars */"use client";
 import { JSX, useState } from 'react';
 import { useStockManagement } from '@/hooks/use-stocks-management';
 import { InventoryItem } from '@/types/inventory';
@@ -21,10 +20,11 @@ import {
   RefreshCw,
   TrendingDown,
   Clock,
-  Eye,
   Truck,
+  Eye
 } from 'lucide-react';
 import { MedicineFormEnum } from '@/app/api/service/shipmentService';
+import { useWarehouseMetrics } from '@/hooks/use-metrics';
 
 export default function StocksManagementWarehouse() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -47,17 +47,22 @@ export default function StocksManagementWarehouse() {
     limit: 10,
   };
 
+  // Inventory + expiring batches
   const { 
     inventory, 
     isLoadingInventory, 
     inventoryError, 
-    overview, 
-    isLoadingOverview, 
-    overviewError, 
     expiringBatches, 
     isLoadingExpiringBatches, 
     expiringBatchesError 
   } = useStockManagement(queryParams);
+
+  // Overview metrics (real API)
+  const { 
+    overview: overview, 
+    isLoadingOverview: isLoadingOverview, 
+    errorOverview: overviewError 
+  } = useWarehouseMetrics();
 
   const filteredInventory = inventory?.data || [];
 
@@ -70,13 +75,9 @@ export default function StocksManagementWarehouse() {
   };
 
   const getStockStatus = (quantity: number): JSX.Element => {
-    if (quantity === 0) {
-      return <Badge className="bg-red-500 text-white">Out of Stock</Badge>;
-    } else if (quantity <= 50) {
-      return <Badge className="bg-yellow-500 text-white">Low Stock</Badge>;
-    } else if (quantity <= 100) {
-      return <Badge className="bg-blue-500 text-white">Medium Stock</Badge>;
-    }
+    if (quantity === 0) return <Badge className="bg-red-500 text-white">Out of Stock</Badge>;
+    if (quantity <= 50) return <Badge className="bg-yellow-500 text-white">Low Stock</Badge>;
+    if (quantity <= 100) return <Badge className="bg-blue-500 text-white">Medium Stock</Badge>;
     return <Badge className="bg-green-500 text-white">In Stock</Badge>;
   };
 
@@ -85,13 +86,9 @@ export default function StocksManagementWarehouse() {
     const today = new Date();
     const diffDays = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
     
-    if (diffDays < 0) {
-      return <Badge className="bg-red-500 text-white">Expired</Badge>;
-    } else if (diffDays <= 30) {
-      return <Badge className="bg-yellow-500 text-white">Expiring Soon</Badge>;
-    } else if (diffDays <= 90) {
-      return <Badge className="bg-blue-500 text-white">Expires in 3 months</Badge>;
-    }
+    if (diffDays < 0) return <Badge className="bg-red-500 text-white">Expired</Badge>;
+    if (diffDays <= 30) return <Badge className="bg-yellow-500 text-white">Expiring Soon</Badge>;
+    if (diffDays <= 90) return <Badge className="bg-blue-500 text-white">Expires in 3 months</Badge>;
     return <Badge className="bg-green-500 text-white">Good</Badge>;
   };
 
@@ -100,17 +97,14 @@ export default function StocksManagementWarehouse() {
   };
 
   const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-NG', {
-      style: 'currency',
-      currency: 'NGN'
-    }).format(amount);
+    return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(amount);
   };
-    
+
   const handleFormFilterChange = (value: string): void => {
-  if (value === 'all' || Object.values(MedicineFormEnum).includes(value as MedicineFormEnum)) {
-    setFormFilter(value as MedicineFormEnum | 'all');
-  }
-};
+    if (value === 'all' || Object.values(MedicineFormEnum).includes(value as MedicineFormEnum)) {
+      setFormFilter(value as MedicineFormEnum | 'all');
+    }
+  };
 
   const toggleItemDetails = (itemId: string): void => {
     setExpandedItem(expandedItem === itemId ? null : itemId);
@@ -126,14 +120,15 @@ export default function StocksManagementWarehouse() {
 
   return (
     <div className="space-y-6 p-4">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-bold">
             <Package className="h-6 w-6" />
-            Stocks Management
+            Warehouse Stock
           </h1>
           <p className="text-gray-500">
-            Monitor and manage pharmaceutical inventory and stock levels
+            Monitor stock levels, expiry dates, and manage inventory
           </p>
         </div>
         <Button variant="outline" size="sm" className="border-gray-300" onClick={handleRefresh}>
@@ -142,14 +137,14 @@ export default function StocksManagementWarehouse() {
         </Button>
       </div>
 
-      {/* Overview Cards */}
+      {/* Overview Cards — Only 3 KPIs */}
       {isLoadingOverview ? (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {[...Array(4)].map((_, index) => (
-            <Card key={index}>
-              <CardContent className="p-4">
-                <Skeleton className="h-6 w-3/4 mb-2" />
-                <Skeleton className="h-8 w-1/2" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[...Array(3)].map((_, i) => (
+            <Card key={i}>
+              <CardContent className="p-4 space-y-2">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-8 w-24" />
               </CardContent>
             </Card>
           ))}
@@ -157,7 +152,7 @@ export default function StocksManagementWarehouse() {
       ) : overviewError ? (
         <Card className="border-red-500">
           <CardContent className="p-4 text-red-500">
-            Error loading overview: {overviewError.message}
+            Error loading overview: {(overviewError as Error).message}
           </CardContent>
         </Card>
       ) : overview && (
@@ -195,7 +190,6 @@ export default function StocksManagementWarehouse() {
               </div>
             </CardContent>
           </Card>
-          
         </div>
       )}
 
@@ -203,14 +197,18 @@ export default function StocksManagementWarehouse() {
       {isLoadingExpiringBatches ? (
         <Card className="border-yellow-500 bg-yellow-50">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-yellow-500">
-              <AlertTriangle className="h-5 w-5" />
-              Expiring Items Alert
-            </CardTitle>
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              <Skeleton className="h-5 w-32" />
+            </div>
           </CardHeader>
-          <CardContent>
-            <Skeleton className="h-12 w-full mb-2" />
-            <Skeleton className="h-12 w-full" />
+          <CardContent className="space-y-3">
+            {[...Array(2)].map((_, i) => (
+              <div key={i} className="p-3 bg-white rounded border">
+                <Skeleton className="h-4 w-48 mb-2" />
+                <Skeleton className="h-3 w-32" />
+              </div>
+            ))}
           </CardContent>
         </Card>
       ) : expiringBatchesError ? (
@@ -314,9 +312,23 @@ export default function StocksManagementWarehouse() {
         <CardContent>
           {isLoadingInventory ? (
             <div className="space-y-4 py-8">
-              <Skeleton className="h-8 w-full" />
-              {[...Array(5)].map((_, index) => (
-                <Skeleton key={index} className="h-12 w-full" />
+              <div className="grid grid-cols-6 gap-4 px-4">
+                <Skeleton className="h-6 w-full" />
+                <Skeleton className="h-6 w-full" />
+                <Skeleton className="h-6 w-full" />
+                <Skeleton className="h-6 w-full" />
+                <Skeleton className="h-6 w-full" />
+                <Skeleton className="h-6 w-full" />
+              </div>
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="grid grid-cols-6 gap-4 px-4 py-3">
+                  <Skeleton className="h-16 w-full rounded" />
+                  <Skeleton className="h-16 w-full rounded" />
+                  <Skeleton className="h-16 w-full rounded" />
+                  <Skeleton className="h-16 w-full rounded" />
+                  <Skeleton className="h-16 w-full rounded" />
+                  <Skeleton className="h-8 w-20 rounded-full" />
+                </div>
               ))}
             </div>
           ) : inventoryError ? (
