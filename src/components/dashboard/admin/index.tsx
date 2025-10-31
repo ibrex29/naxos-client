@@ -12,7 +12,7 @@ import { mockOrders, mockSalesReports, mockMedicines } from '@/data';
 
 export default function Overview() {
   // Fetch real inventory overview
-  const { overview: inventoryOverview, isLoadingOverview : isLoading, errorOverview: error } = useWarehouseMetrics();
+  const { overview: inventoryOverview, isLoadingOverview : isLoading, errorOverview: error , recentMovements} = useWarehouseMetrics();
 
   // Mock data (unchanged)
   const pendingOrders = mockOrders.filter(o => o.status === 'pending').length;
@@ -157,42 +157,80 @@ export default function Overview() {
         </div>
       </div>
 
-      {/* Recent Orders */}
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg">Recent Orders</CardTitle>
-            <Button variant="outline" size="sm">
-              <Eye className="h-4 w-4 mr-2" />
-              View All
-            </Button>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {recentOrders.map((order) => (
-                <div key={order.id} className="flex items-center justify-between p-3 border rounded-lg bg-card hover:bg-muted/50 transition-colors">
-                  <div className="space-y-1">
-                    <div className="flex items-center space-x-2">
-                      <p className="font-medium text-sm">{order.id}</p>
-                      <Badge variant={getStatusVariant(order.status)} className="text-xs">
-                        {order.status}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground">{order.customer}</p>
-                    <p className="text-xs text-muted-foreground">{order.date}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-semibold">{order.amount}</p>
-                  </div>
+    {/* Recent Stock Movements */}
+<div className="grid gap-4 lg:grid-cols-3">
+  <Card className="lg:col-span-2">
+    <CardHeader className="flex flex-row items-center justify-between">
+      <CardTitle className="text-lg">Recent Stock Movements</CardTitle>
+      <Button variant="outline" size="sm">
+        <Eye className="h-4 w-4 mr-2" />
+        View All
+      </Button>
+    </CardHeader>
+    <CardContent>
+      {isLoading ? (
+        <div className="space-y-3">
+          {[...Array(4)].map((_, i) => (
+            <div
+              key={i}
+              className="animate-pulse h-16 bg-muted rounded-lg"
+            />
+          ))}
+        </div>
+      ) : error ? (
+        <div className="text-sm text-destructive p-4 bg-destructive/10 rounded-lg">
+          Failed to load recent stock movements.
+        </div>
+      ) : recentMovements.length === 0 ? (
+        <p className="text-sm text-muted-foreground p-4">
+          No recent stock movements found.
+        </p>
+      ) : (
+        <div className="space-y-3">
+          {recentMovements.slice(0, 5).map((movement, index) => (
+            <div
+              key={index}
+              className="flex items-center justify-between p-3 border rounded-lg bg-card hover:bg-muted/50 transition-colors"
+            >
+              <div className="space-y-1">
+                <div className="flex items-center space-x-2">
+                  <p className="font-medium text-sm">{movement.medicine}</p>
+                  <Badge variant="outline" className="text-xs">
+                    {movement.batchNumber}
+                  </Badge>
                 </div>
-              ))}
+                <p className="text-sm text-muted-foreground">
+                  {movement.quantity} units
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {new Date(movement.createdAt).toLocaleDateString()}
+                </p>
+              </div>
+              <div className="text-right">
+                <Badge
+                  variant={
+                    new Date(movement.expiryDate) < new Date()
+                      ? "destructive"
+                      : "default"
+                  }
+                  className="text-xs"
+                >
+                  {new Date(movement.expiryDate) < new Date()
+                    ? "Expired"
+                    : "Valid"}
+                </Badge>
+              </div>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          ))}
+        </div>
+      )}
+    </CardContent>
+  </Card>
+</div>
+
 
       {/* Stock Status Overview */}
-      <Card>
+      {/* <Card>
         <CardHeader>
           <CardTitle className="text-lg">Stock Status Overview</CardTitle>
         </CardHeader>
@@ -224,7 +262,7 @@ export default function Overview() {
             })}
           </div>
         </CardContent>
-      </Card>
+      </Card> */}
     </div>
   );
 }
