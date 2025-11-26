@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { JSX } from "react";
+import type { JSX, ReactNode } from "react";
 import {
   Dialog,
   DialogContent,
@@ -93,6 +93,7 @@ export default function ShipmentDetailsDialog({
       "Manufacturer",
       "Strength",
       "Batch Number",
+      "Unit Type",
       "Expiry Date",
       "Quantity",
       "Unit Cost",
@@ -106,6 +107,7 @@ export default function ShipmentDetailsDialog({
       item.medicine.manufacturer?.name ?? "—",
       item.medicine.strength ?? "N/A",
       item.batchNumber ?? "N/A",
+      item.unitType ?? "N/A",
       item.expiryDate
         ? new Date(item.expiryDate).toLocaleDateString()
         : "N/A",
@@ -243,238 +245,207 @@ export default function ShipmentDetailsDialog({
   };
 
   return (
-    <Dialog open={!!selectedShipment} onOpenChange={() => setSelectedShipment(null)}>
-      <DialogContent className="max-w-5xl">
-        <DialogHeader>
-          <DialogTitle className="mt-4 flex items-center justify-between">
-            <span>Shipment Details: {selectedShipment?.proformaInvoiceNo}</span>
-            {selectedShipment && (
-              <div className="flex items-center gap-2">
-                <Select
-                  value={exportFormat}
-                  onValueChange={(v) => setExportFormat(v as ExportFormat)}
-                >
-                  <SelectTrigger className="w-[120px]">
-                    <SelectValue placeholder="Format" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="csv">CSV</SelectItem>
-                    <SelectItem value="pdf">PDF</SelectItem>
-                    <SelectItem value="docx">Word</SelectItem>
-                    <SelectItem value="xlsx">Excel</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => exportShipmentData(selectedShipment)}
-                  className="gap-2"
-                >
-                  <Download className="h-4 w-4" />
-                  Export
-                </Button>
-              </div>
-            )}
-          </DialogTitle>
-        </DialogHeader>
+  <Dialog open={!!selectedShipment} onOpenChange={() => setSelectedShipment(null)}>
+    <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto p-2 sm:p-6">
+      <DialogHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <DialogTitle className="text-xl sm:text-2xl">
+          Shipment: {selectedShipment?.proformaInvoiceNo}
+        </DialogTitle>
 
         {selectedShipment && (
-          <div className="space-y-6">
+          <div className="flex flex-wrap items-center gap-2">
+            <Select
+              value={exportFormat}
+              onValueChange={(v) => setExportFormat(v as ExportFormat)}
+            >
+              <SelectTrigger className="w-[110px] text-xs sm:text-sm">
+                <SelectValue placeholder="Format" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="csv">CSV</SelectItem>
+                <SelectItem value="pdf">PDF</SelectItem>
+                <SelectItem value="docx">Word</SelectItem>
+                <SelectItem value="xlsx">Excel</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => exportShipmentData(selectedShipment)}
+              className="gap-2 text-xs sm:text-sm"
+            >
+              <Download className="h-4 w-4" />
+              Export
+            </Button>
+          </div>
+        )}
+      </DialogHeader>
+
+      {selectedShipment && (
+        <div className="mt-6 space-y-6 text-sm">
+          {/* Top Section: Info + Summary */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Shipment Info + Documents */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <div>
-                  <h4 className="font-medium mb-2">Shipment Information</h4>
-                  <div className="space-y-2 text-sm">
-                      {(() => {
-                        const info: [string, string | JSX.Element][] = [
-                          ["Proforma Invoice", selectedShipment.proformaInvoiceNo],
-                          ["Bill of Lading", selectedShipment.billOfLading],
-                          ["Supplier", selectedShipment.supplier],
-                          [
-                            "Received Date",
-                            new Date(selectedShipment.receivedDate).toLocaleDateString(),
-                          ],
-                          ["Shipment Mode", selectedShipment.shipmentMode],
-                          ["Status", getStatusBadge(selectedShipment.deliveryStatus)],
-                          [
-                            "Created By",
-                            `${selectedShipment.createdBy?.email ?? ""}`.trim(),
-                          ],
-                        ];
-                        return info.map(([label, value]) => (
-                          <div key={label} className="flex justify-between">
-                            <span className="text-muted-foreground">{label}:</span>
-                            <span>{value}</span>
-                          </div>
-                        ));
-                      })()}
+            <div className="space-y-6">
+              <div>
+                <h4 className="font-semibold text-base mb-3">Shipment Information</h4>
+                <div className="space-y-2 text-sm">
+                  {([
+                    ["Proforma Invoice", selectedShipment.proformaInvoiceNo],
+                    ["Bill of Lading", selectedShipment.billOfLading],
+                    ["Supplier", selectedShipment.supplier],
+                    ["Received Date", new Date(selectedShipment.receivedDate).toLocaleDateString()],
+                    ["Shipment Mode", selectedShipment.shipmentMode],
+                    ["Status", getStatusBadge(selectedShipment.deliveryStatus)],
+                    ["Created By", selectedShipment.createdBy?.email ?? "—"],
+                  ] as [string, ReactNode][]).map(([label, value]) => (
+                    <div key={label} className="flex justify-between  py-1">
+                      <span className="text-muted-foreground">{label}:</span>
+                      <span className="font-medium text-right ml-4">{value}</span>
                     </div>
-                </div>
-
-                <div>
-                  <h4 className="font-medium mb-2">Documents</h4>
-                  {selectedShipment.documents.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                      No documents attached.
-                    </p>
-                  ) : (
-                    <div className="space-y-3">
-                      {selectedShipment.documents.map((doc, idx) => {
-                        const entries = [
-                          doc.invoiceDoc && {
-                            label: "Invoice",
-                            url: doc.invoiceDoc,
-                            name: doc.invoiceDocName ?? getFileName(doc.invoiceDoc),
-                          },
-                          doc.qualityCheck && {
-                            label: "Quality Check",
-                            url: doc.qualityCheck,
-                            name:
-                              doc.qualityCheckName ?? getFileName(doc.qualityCheck),
-                          },
-                          doc.packingList && {
-                            label: "Packing List",
-                            url: doc.packingList,
-                            name:
-                              doc.packingListName ?? getFileName(doc.packingList),
-                          },
-                          doc.insurance && {
-                            label: "Insurance",
-                            url: doc.insurance,
-                            name: doc.insuranceName ?? getFileName(doc.insurance),
-                          },
-                        ].filter(Boolean) as {
-                          label: string;
-                          url: string;
-                          name: string;
-                        }[];
-
-                        return (
-                          <div key={idx} className="space-y-2">
-                            {entries.map((e) => (
-                              <div
-                                key={e.label}
-                                className="flex items-center justify-between text-sm border-b pb-2 last:border-0"
-                              >
-                                <span className="text-muted-foreground">
-                                  {e.label}:
-                                </span>
-                                <a
-                                  href={e.url}
-                                  download={e.name}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex items-center gap-2 text-blue-600 hover:underline"
-                                >
-                                  <Download className="h-4 w-4" />
-                                  <span
-                                    className="truncate max-w-[140px]"
-                                    title={e.name}
-                                  >
-                                    {e.name}
-                                  </span>
-                                </a>
-                              </div>
-                            ))}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                  ))}
                 </div>
               </div>
 
-              {/* Summary */}
               <div>
-                <h4 className="font-medium mb-2">Summary</h4>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Total Items:</span>
-                    <span>{selectedShipment.items.length}</span>
+                <h4 className="font-semibold text-base mb-3">Documents</h4>
+                {selectedShipment.documents.length === 0 ? (
+                  <p className="text-muted-foreground">No documents attached.</p>
+                ) : (
+                  <div className="space-y-4">
+                    {selectedShipment.documents.map((doc, idx) => {
+                      const docs = [
+                        doc.invoiceDoc && { label: "Invoice", url: doc.invoiceDoc, name: doc.invoiceDocName ?? getFileName(doc.invoiceDoc) },
+                        doc.qualityCheck && { label: "Quality Check", url: doc.qualityCheck, name: doc.qualityCheckName ?? getFileName(doc.qualityCheck) },
+                        doc.packingList && { label: "Packing List", url: doc.packingList, name: doc.packingListName ?? getFileName(doc.packingList) },
+                        doc.insurance && { label: "Insurance", url: doc.insurance, name: doc.insuranceName ?? getFileName(doc.insurance) },
+                      ].filter(Boolean) as { label: string; url: string; name: string }[];
+
+                      return (
+                        <div key={idx} className="space-y-2">
+                          {docs.map((d) => (
+                            <div key={d.label} className="flex items-center justify-between py-2 border-b last:border-0">
+                              <span className="text-muted-foreground text-xs sm:text-sm">{d.label}:</span>
+                              <a
+                                href={d.url}
+                                download={d.name}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1.5 text-blue-600 hover:underline text-xs sm:text-sm"
+                              >
+                                <Download className="h-3.5 w-3.5" />
+                                <span className="truncate max-w-[120px] sm:max-w-[180px]" title={d.name}>
+                                  {d.name}
+                                </span>
+                              </a>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })}
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Total Quantity:</span>
-                    <span>
-                      {selectedShipment.items.reduce(
-                        (s, i) => s + (i.quantity ?? 0),
-                        0
-                      )}{" "}
-                      units
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Total Cost Price:</span>
-                    <span>
-                      NGN
-                      {selectedShipment.items
-                        .reduce(
-                          (s, i) => s + (i.quantity ?? 0) * (i.unitCost ?? 0),
-                          0
-                        )
-                        .toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Total Selling Price:</span>
-                    <span className="text-green-700 font-medium">
-                      NGN
-                      {selectedShipment.items
-                        .reduce(
-                          (s, i) =>
-                            s + (i.quantity ?? 0) * (i.unitCostToBeSold ?? 0),
-                          0
-                        )
-                        .toLocaleString()}
-                    </span>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
 
-            {/* Items Table – 9 columns */}
-            <div>
-              <h4 className="font-medium mb-4">Items in Shipment</h4>
-              <div className="border rounded-lg overflow-hidden overflow-x-auto">
-                <div className="grid grid-cols-9 gap-4 p-3 bg-muted/50 text-sm font-medium">
-                  <span>Medicine</span>
-                  <span>Form</span>
-                  <span>Manufacturer</span>
-                  <span>Strength</span>
-                  <span>Batch</span>
-                  <span>Expiry</span>
-                  <span>Qty</span>
-                  <span>Unit Cost</span>
-                  <span>Unit Cost To Sell</span>
+            {/* Summary Card */}
+            <div className="bg-muted/50 rounded-lg p-5 space-y-3">
+              <h4 className="font-semibold text-base">Summary</h4>
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Total Items</span>
+                  <span className="font-medium">{selectedShipment.items.length}</span>
                 </div>
-
-                {selectedShipment.items.map((item) => (
-                  <div
-                    key={item.id}
-                    className="grid grid-cols-9 gap-4 p-3 border-t text-sm"
-                  >
-                    <span>{item.medicine.name ?? "—"}</span>
-                    <span>{item.medicine.form ?? "—"}</span>
-                    <span>{item.medicine.manufacturer?.name ?? "—"}</span>
-                    <span>{item.medicine.strength ?? "—"}</span>
-                    <span className="font-mono">{item.batchNumber ?? "—"}</span>
-                    <span>
-                      {item.expiryDate
-                        ? new Date(item.expiryDate).toLocaleDateString()
-                        : "—"}
-                    </span>
-                    <span>{item.quantity ?? 0}</span>
-                    <span>NGN{(item.unitCost ?? 0).toFixed(2)}</span>
-                    <span className="text-green-700 font-medium">
-                      NGN{(item.unitCostToBeSold ?? 0).toFixed(2)}
-                    </span>
-                  </div>
-                ))}
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Total Quantity</span>
+                  <span className="font-medium">
+                    {selectedShipment.items.reduce((s, i) => s + (i.quantity ?? 0), 0)} units
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Total Cost Price</span>
+                  <span className="font-medium">
+                    NGN {selectedShipment.items.reduce((s, i) => s + (i.quantity ?? 0) * (i.unitCost ?? 0), 0).toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex justify-between text-base font-semibold text-green-700">
+                  <span>Total Selling Price</span>
+                  <span>
+                    NGN {selectedShipment.items.reduce((s, i) => s + (i.quantity ?? 0) * (i.unitCostToBeSold ?? 0), 0).toLocaleString()}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
-        )}
-      </DialogContent>
-    </Dialog>
-  );
+
+          {/* Items Table – Mobile-Friendly Horizontal Scroll */}
+          <div className="mt-8">
+            <h4 className="font-semibold text-base mb-4">Items in Shipment</h4>
+
+            <div className="relative border rounded-lg overflow-hidden">
+              {/* Visual cue for horizontal scroll on mobile */}
+              <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-rounded scrollbar-track-gray-200 scrollbar-thumb-gray-400">
+                <table className="w-full min-w-[1200px] table-auto border-collapse">
+                  <thead className="bg-muted sticky top-0 z-10">
+                    <tr>
+                      {[
+                        "Medicine",
+                        "Form",
+                        "Manufacturer",
+                        "Strength",
+                        "Batch",
+                        "Unit Type",
+                        "Expiry",
+                        "Qty",
+                        "Unit Cost",
+                        "Unit Cost To Sell",
+                      ].map((h) => (
+                        <th key={h} className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {selectedShipment.items.map((item) => (
+                      <tr key={item.id} className="hover:bg-muted/50 transition">
+                        <td className="px-3 py-4 text-sm whitespace-nowrap">{item.medicine.name ?? "—"}</td>
+                        <td className="px-3 py-4 text-sm whitespace-nowrap">{item.medicine.form ?? "—"}</td>
+                        <td className="px-3 py-4 text-sm whitespace-nowrap">{item.medicine.manufacturer?.name ?? "—"}</td>
+                        <td className="px-3 py-4 text-sm whitespace-nowrap">{item.medicine.strength ?? "—"}</td>
+                        <td className="px-3 py-4 text-sm font-mono whitespace-nowrap">{item.batchNumber ?? "—"}</td>
+                        <td className="px-3 py-4 text-sm whitespace-nowrap">{item.unitType ?? "—"}</td>
+                        <td className="px-3 py-4 text-sm whitespace-nowrap">
+                          {item.expiryDate ? new Date(item.expiryDate).toLocaleDateString() : "—"}
+                        </td>
+                        <td className="px-3 py-4 text-sm whitespace-nowrap">{item.quantity ?? 0}</td>
+                        <td className="px-3 py-4 text-sm whitespace-nowrap">NGN {(item.unitCost ?? 0).toFixed(2)}</td>
+                        <td className="px-3 py-4 text-sm whitespace-nowrap font-medium text-green-700">
+                          NGN {(item.unitCostToBeSold ?? 0).toFixed(2)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile scroll hint */}
+              <div className="md:hidden bg-gradient-to-r from-transparent via-transparent to-background pointer-events-none absolute inset-y-0 right-0 w-12 flex items-center justify-end pr-2">
+                <div className="bg-muted/80 text-xs text-muted-foreground px-2 py-1 rounded">
+                  ← Scroll →
+                </div>
+              </div>
+            </div>
+
+            {/* Optional: Add a note for mobile users */}
+            <p className="text-xs text-muted-foreground text-center mt-2 md:hidden">
+              Swipe left/right to see all columns
+            </p>
+          </div>
+        </div>
+      )}
+    </DialogContent>
+  </Dialog>
+);
 }

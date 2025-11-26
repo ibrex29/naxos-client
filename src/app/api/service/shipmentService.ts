@@ -56,6 +56,7 @@ export interface Medicine {
   packSize?: number;
   batchNumber?: string;
   expiryDate?: string;
+  unitType?: string;
   quantity: number;
   unitCost: number;
   unitCostToBeSold: number;
@@ -67,6 +68,7 @@ export interface ShipmentItem {
   id?: string;
   shipmentId?: string;
   medicineId?: string;
+  unitType?: string;
   medicine: Medicine;
 }
 
@@ -135,6 +137,7 @@ export const createShipment = async (
         strength?: string;
         manufacturingDate?: string;
         packSize?: number;
+        unitType?: string;
         batchNumber: string;
         expiryDate: string;
         quantity: number;

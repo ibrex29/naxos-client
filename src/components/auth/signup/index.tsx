@@ -182,6 +182,7 @@ export default function SignupForm({ onLogin }: SignupFormProps) {
                   <SelectItem value="super-admin">Super Admin</SelectItem>
                   <SelectItem value="sales-admin">Sales Admin</SelectItem>
                   <SelectItem value="warehouse-admin">Warehouse Admin</SelectItem>
+                  <SelectItem value="finance-admin">Finance Admin</SelectItem>
                 </SelectContent>
               </Select>
             </div>

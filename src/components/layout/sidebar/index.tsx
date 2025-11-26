@@ -10,9 +10,7 @@ import {
   LayoutDashboard,
   Users,
   Package,
-  BarChart3,
   FileText,
-  UserCheck,
   LogOut,
   Pill,
   Warehouse,
@@ -22,6 +20,9 @@ import {
   ChevronRight,
   Plus,
   Factory,
+  Calculator,
+  CreditCard,
+  Receipt,
 } from 'lucide-react';
 import { UserRole } from '@/types/enum';
 import { User } from 'next-auth';
@@ -71,8 +72,10 @@ const SidebarContent = ({
         ];
       case UserRole.Finance: // finance-admin
         return [
-          { id: 'reports', label: 'Reports', icon: BarChart3 },
-          { id: 'approvals', label: 'Order Approvals', icon: UserCheck },
+           { id: 'accounts-overview', label: 'Accounts Overview', icon: LayoutDashboard },
+          { id: 'orders-tracking', label: 'Orders Tracking', icon: Receipt },
+          { id: 'credit-management', label: 'Credit Management', icon: CreditCard },
+          { id: 'financial-reports', label: 'Financial Reports', icon: Calculator }
         ];
       default:
         return [];

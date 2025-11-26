@@ -43,6 +43,7 @@ export const useCreateShipment = () => {
           strength?: string;
           manufacturingDate?: string;
           packSize?: number;
+              unitType?: string;
           batchNumber: string;
           expiryDate: string;
           quantity: number;

@@ -9,6 +9,7 @@ export interface Medicine {
   manufacturer?: Manufacturer; 
   manufacturingDate?: string;
   packSize?: number;
+  unitType?: string;
   createdAt?: string | Date;
   updatedAt?: string | Date;
  
@@ -18,6 +19,7 @@ export interface ShipmentItem {
   id?: string;
   shipmentId?: string;
   medicineId?: string;
+  unitType?: string;
   medicine: Medicine;
    batchNumber?: string;
   expiryDate?: string;

@@ -97,6 +97,7 @@ const exportShipmentData = (shipment: ShipmentDisplay, exportFormat: 'csv' | 'pd
     'Manufacturer',
     'Strength',
     'Batch Number',
+    'Unit Type',
     'Expiry Date',
     'Quantity',
     'Unit Cost',
@@ -109,6 +110,7 @@ const exportShipmentData = (shipment: ShipmentDisplay, exportFormat: 'csv' | 'pd
     item.medicine.manufacturer?.name || undefined,
     item.medicine.strength || 'N/A',
     item.batchNumber || 'N/A',
+    item.unitType || 'N/A',
     item.expiryDate || 'N/A',
     item.quantity || 0,
     item.unitCost || 0,
@@ -297,7 +299,7 @@ const ShipmentCard: React.FC<ShipmentCardProps> = ({
               <div key={index} className="flex justify-between bg-muted/30 rounded p-2">
                 <span>{item.medicine.name || 'Unknown'} ({item.medicine.form || 'N/A'})</span>
                 <span className="text-muted-foreground">
-                  {item.quantity || 0} units | Batch: {item.batchNumber || 'N/A'}
+                  {item.quantity || 0} {item.unitType ? item.unitType : 'units'} | Batch: {item.batchNumber || 'N/A'}
                 </span>
               </div>
             ))}

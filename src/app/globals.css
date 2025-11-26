@@ -118,3 +118,14 @@
   --sidebar-border: oklch(0.269 0 0);
   --sidebar-ring: oklch(0.565 0 0);
 }
+
+/* globals.css or inside a <style> tag */
+.scrollbar-thin {
+  scrollbar-width: thin;
+}
+.scrollbar-thumb-gray-400 {
+  --tw-scrollbar-thumb: #9ca3af;
+}
+.scrollbar-thumb-rounded {
+  --tw-scrollbar-thumb-rounded: rounded;
+}

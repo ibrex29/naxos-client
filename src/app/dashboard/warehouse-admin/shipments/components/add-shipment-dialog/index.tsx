@@ -83,6 +83,7 @@ export default function AddShipmentDialog({
           packSize: 0,
           batchNumber: "",
           expiryDate: "",
+          unitType: "",
           quantity: 0,
           unitCost: 0,
           unitCostToBeSold: 0,
@@ -388,6 +389,24 @@ export default function AddShipmentDialog({
                             value={item.medicine.packSize || 0}
                             onChange={(e) => updateShipmentItem(index, "packSize", parseInt(e.target.value))}
                           />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Unit Type</Label>
+                          <Select
+                            value={item.medicine.unitType || "CARTON"}
+                            onValueChange={(value) => updateShipmentItem(index, "unitType", value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select unit type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="CARTON">CARTON</SelectItem>
+                              <SelectItem value="BOX">BOX</SelectItem>
+                              <SelectItem value="BOTTLE">BOTTLE</SelectItem>
+                              <SelectItem value="UNIT">UNIT</SelectItem>
+                              <SelectItem value="SACHET">SACHET</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                         <div className="space-y-2 md:row-span-2 flex items-center">
                           <Button

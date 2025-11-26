@@ -15,6 +15,6 @@ export const rolesMap: Record<string, string> = {
   [UserRole.Admin]: '/dashboard/super-admin/overview',
   [UserRole.Sales]: '/dashboard/sales-admin/create-order',
   [UserRole.Warehouse]: '/dashboard/warehouse-admin/inventory',
-  [UserRole.Finance]: '/dashboard/finance-admin/reports',
+  [UserRole.Finance]: '/dashboard/finance-admin/account-overview',
 };
 

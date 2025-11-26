@@ -17,6 +17,7 @@ export interface InventoryItem {
     expiryDate: string;
     quantity: number;
     unitCost: number;
+    unitType?: string;
   }>;
 }
 

@@ -56,6 +56,7 @@ export default function ShipmentDetailsDialog({
       "Manufacturer",
       "Strength",
       "Batch Number",
+      "Unit Type",
       "Expiry Date",
       "Quantity",
       "Unit Cost",
@@ -69,6 +70,7 @@ export default function ShipmentDetailsDialog({
       item.medicine.manufacturer?.name ?? "—",
       item.medicine.strength ?? "N/A",
       item.batchNumber ?? "N/A",
+      item.unitType ?? "N/A",
       item.expiryDate
         ? new Date(item.expiryDate).toLocaleDateString()
         : "N/A",
@@ -394,44 +396,42 @@ export default function ShipmentDetailsDialog({
               </div>
             </div>
 
-            {/* Items Table – Now 9 columns */}
+            {/* Items Table – Now 9 columns (use table for horizontal scroll) */}
             <div>
               <h4 className="font-medium mb-4">Items in Shipment</h4>
-              <div className="border rounded-lg overflow-hidden overflow-x-auto">
-                <div className="grid grid-cols-9 gap-4 p-3 bg-muted/50 text-sm font-medium">
-                  <span>Medicine</span>
-                  <span>Form</span>
-                  <span>Manufacturer</span>
-                  <span>Strength</span>
-                  <span>Batch</span>
-                  <span>Expiry</span>
-                  <span>Qty</span>
-                  <span>Unit Cost</span>
-                  <span>Unit Cost To Sell</span> {/* NEW */}
-                </div>
-
-                {selectedShipment.items.map((item) => (
-                  <div
-                    key={item.id}
-                    className="grid grid-cols-9 gap-4 p-3 border-t text-sm"
-                  >
-                    <span>{item.medicine.name ?? "—"}</span>
-                    <span>{item.medicine.form ?? "—"}</span>
-                    <span>{item.medicine.manufacturer?.name ?? "—"}</span>
-                    <span>{item.medicine.strength ?? "—"}</span>
-                    <span className="font-mono">{item.batchNumber ?? "—"}</span>
-                    <span>
-                      {item.expiryDate
-                        ? new Date(item.expiryDate).toLocaleDateString()
-                        : "—"}
-                    </span>
-                    <span>{item.quantity ?? 0}</span>
-                    <span>₦{(item.unitCost ?? 0).toFixed(2)}</span>
-                    <span className="text-green-700 font-medium">
-                      ₦{(item.unitCostToBeSold ?? 0).toFixed(2)}
-                    </span>
-                  </div>
-                ))}
+              <div className="border rounded-lg overflow-x-auto">
+                <table className="w-full min-w-[1200px] border-collapse table-auto">
+                  <thead className="bg-muted/50 text-sm">
+                    <tr>
+                      <th className="px-4 py-3 text-left whitespace-nowrap">Medicine</th>
+                      <th className="px-4 py-3 text-left whitespace-nowrap">Form</th>
+                      <th className="px-4 py-3 text-left whitespace-nowrap">Manufacturer</th>
+                      <th className="px-4 py-3 text-left whitespace-nowrap">Strength</th>
+                      <th className="px-4 py-3 text-left whitespace-nowrap">Batch</th>
+                      <th className="px-4 py-3 text-left whitespace-nowrap">Unit Type</th>
+                      <th className="px-4 py-3 text-left whitespace-nowrap">Expiry</th>
+                      <th className="px-4 py-3 text-left whitespace-nowrap">Qty</th>
+                      <th className="px-4 py-3 text-left whitespace-nowrap">Unit Cost</th>
+                      <th className="px-4 py-3 text-left whitespace-nowrap">Unit Cost To Sell</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedShipment.items.map((item) => (
+                      <tr key={item.id} className="border-t text-sm">
+                        <td className="px-4 py-3 whitespace-nowrap">{item.medicine.name ?? '—'}</td>
+                        <td className="px-4 py-3 whitespace-nowrap">{item.medicine.form ?? '—'}</td>
+                        <td className="px-4 py-3 whitespace-nowrap">{item.medicine.manufacturer?.name ?? '—'}</td>
+                        <td className="px-4 py-3 whitespace-nowrap">{item.medicine.strength ?? '—'}</td>
+                        <td className="px-4 py-3 font-mono whitespace-nowrap">{item.batchNumber ?? '—'}</td>
+                        <td className="px-4 py-3 whitespace-nowrap">{item.unitType ?? '—'}</td>
+                        <td className="px-4 py-3 whitespace-nowrap">{item.expiryDate ? new Date(item.expiryDate).toLocaleDateString() : '—'}</td>
+                        <td className="px-4 py-3 whitespace-nowrap">{item.quantity ?? 0}</td>
+                        <td className="px-4 py-3 whitespace-nowrap">₦{(item.unitCost ?? 0).toFixed(2)}</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-green-700 font-medium">₦{(item.unitCostToBeSold ?? 0).toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
