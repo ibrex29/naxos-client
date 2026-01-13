@@ -23,6 +23,7 @@ import {
   Calculator,
   CreditCard,
   Receipt,
+  CheckSquare,
 } from 'lucide-react';
 import { UserRole } from '@/types/enum';
 import { User } from 'next-auth';
@@ -73,6 +74,7 @@ const SidebarContent = ({
       case UserRole.Finance: // finance-admin
         return [
            { id: 'accounts-overview', label: 'Accounts Overview', icon: LayoutDashboard },
+          { id: 'order-approval', label: 'Order Approval', icon: CheckSquare },
           { id: 'orders-tracking', label: 'Orders Tracking', icon: Receipt },
           { id: 'credit-management', label: 'Credit Management', icon: CreditCard },
           { id: 'financial-reports', label: 'Financial Reports', icon: Calculator }
