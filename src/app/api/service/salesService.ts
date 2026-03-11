@@ -13,6 +13,9 @@ export enum PaymentType {
   CREDIT = 'CREDIT',
 }
 
+// Sales order approval workflow status
+export type SalesOrderStatus = 'DRAFT' | 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED';
+
 // Interface for SalesOrderItem
 export interface SalesOrderItem {
   id: string;
@@ -25,7 +28,7 @@ export interface SalesOrderItem {
     name: string;
     strength: string;
     form: string;
-    manufacturer: string;
+    manufacturer?: string;
   };
 }
 
@@ -61,10 +64,17 @@ export interface SalesOrder {
   distributorId: string;
   salesRepId: string;
   currency: 'NGN' | 'USD';
+  status: SalesOrderStatus;
   paymentStatus: PaymentStatus;
   orderAmount: number;
   amountPaid: number;
   amountRemaining: number;
+  approvedById: string | null;
+  approvalNotes: string | null;
+  approvedAt: string | null;
+  rejectedById: string | null;
+  rejectionReason: string | null;
+  rejectedAt: string | null;
   createdAt: string;
   updatedAt: string;
   distributor: {
@@ -90,6 +100,7 @@ export interface SalesOrder {
 export interface SalesOrderQueryParams {
   search?: string;
   paymentStatus?: PaymentStatus;
+  orderStatus?: SalesOrderStatus;
   currency?: 'NGN' | 'USD';
   sortField?: 'createdAt' | 'orderAmount' | 'distributor.name';
   sortOrder?: 'asc' | 'desc';
@@ -153,27 +164,55 @@ export interface PaymentResponse {
 // Fetch sales orders with pagination and filters
 export const fetchSalesOrders = async (params: SalesOrderQueryParams = {}): Promise<SalesOrderResponse> => {
   const {
-    search = '',
-    paymentStatus = '',
-    currency = '',
     sortField = 'createdAt',
     sortOrder = 'desc',
     page = 1,
     limit = 10,
+    search,
+    paymentStatus,
+    orderStatus,
+    currency,
   } = params;
 
-  const queryParams = new URLSearchParams({
-    sortOrder,
-    page: page.toString(),
-    limit: limit.toString(),
-    sortField,
-    ...(search && { search }),
-    ...(paymentStatus && { paymentStatus }),
-    ...(currency && { currency }),
-  });
+  const queryParams = new URLSearchParams();
+  queryParams.set('sortOrder', sortOrder);
+  queryParams.set('page', page.toString());
+  queryParams.set('limit', limit.toString());
+  if (sortField) queryParams.set('sortField', sortField);
+  if (search) queryParams.set('search', search);
+  if (paymentStatus) queryParams.set('paymentStatus', paymentStatus);
+  if (orderStatus) queryParams.set('orderStatus', orderStatus);
+  if (currency) queryParams.set('currency', currency);
 
-  const { data } = await authApi.get(`/sales-orders?${queryParams.toString()}`);
+  const { data } = await authApi.get(`/sales-orders?${queryParams}`);
   return data;
+};
+
+export interface ApproveSalesOrderPayload {
+  orderId: string;
+  approvalNotes?: string;
+}
+
+export interface RejectSalesOrderPayload {
+  orderId: string;
+  rejectionReason: string;
+}
+
+export interface BulkApproveSalesOrdersPayload {
+  orderIds: string[];
+  approvalNotes?: string;
+}
+
+export const approveSalesOrder = async (payload: ApproveSalesOrderPayload): Promise<void> => {
+  await authApi.patch('/sales-orders/approve', payload);
+};
+
+export const rejectSalesOrder = async (payload: RejectSalesOrderPayload): Promise<void> => {
+  await authApi.patch('/sales-orders/reject', payload);
+};
+
+export const bulkApproveSalesOrders = async (payload: BulkApproveSalesOrdersPayload): Promise<void> => {
+  await authApi.patch('/sales-orders/bulk-approve', payload);
 };
 
 // Create a new sales order

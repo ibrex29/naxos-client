@@ -1,7 +1,18 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { SalesOrderQueryParams, SalesOrderResponse, createPayment, createSalesOrder, fetchSalesOrders } from '@/app/api/service/salesService';
+import {
+  BulkApproveSalesOrdersPayload,
+  RejectSalesOrderPayload,
+  SalesOrderQueryParams,
+  SalesOrderResponse,
+  approveSalesOrder,
+  bulkApproveSalesOrders,
+  createPayment,
+  createSalesOrder,
+  fetchSalesOrders,
+  rejectSalesOrder,
+} from '@/app/api/service/salesService';
 
 // Query: Get sales orders with pagination and filters
 export const useSalesOrders = (params: SalesOrderQueryParams = {}) => {
@@ -42,6 +53,51 @@ export const useCreatePayment = () => {
     },
     onError: (error) => {
       console.error('Error creating payment:', error);
+    },
+  });
+};
+
+// Mutation: Approve a pending sales order
+export const useApproveSalesOrder = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: approveSalesOrder,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['salesOrders'] });
+    },
+    onError: (error) => {
+      console.error('Error approving sales order:', error);
+    },
+  });
+};
+
+// Mutation: Reject a pending sales order
+export const useRejectSalesOrder = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: RejectSalesOrderPayload) => rejectSalesOrder(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['salesOrders'] });
+    },
+    onError: (error) => {
+      console.error('Error rejecting sales order:', error);
+    },
+  });
+};
+
+// Mutation: Bulk approve pending sales orders
+export const useBulkApproveSalesOrders = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: BulkApproveSalesOrdersPayload) => bulkApproveSalesOrders(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['salesOrders'] });
+    },
+    onError: (error) => {
+      console.error('Error bulk approving sales orders:', error);
     },
   });
 };

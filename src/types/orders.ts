@@ -50,6 +50,10 @@ export interface Payment {
   currency: string;
   type: 'CASH' | 'CREDIT' | 'BANK_TRANSFER';
   createdAt: string;
+  entityType?: 'SalesOrder';
+  entityId?: string;
+  distributorId?: string;
+  salesOrderId?: string;
 }
 
 export interface SalesOrder {
@@ -57,7 +61,9 @@ export interface SalesOrder {
   distributorId: string;
   salesRepId: string;
   currency: 'NGN' | 'USD';
-  approvalStatus: ApprovalStatus;
+  // Backend uses `status`; older UI used `approvalStatus`
+  status?: ApprovalStatus;
+  approvalStatus?: ApprovalStatus;
   paymentStatus: PaymentStatus;
   orderAmount: number;
   amountPaid: number;
@@ -65,10 +71,13 @@ export interface SalesOrder {
   createdAt: string;
   updatedAt: string;
   approvedBy?: string;
-  approvedAt?: string;
+  approvedById?: string | null;
+  approvalNotes?: string | null;
+  approvedAt?: string | null;
   rejectedBy?: string;
-  rejectedAt?: string;
-  rejectionReason?: string;
+  rejectedById?: string | null;
+  rejectedAt?: string | null;
+  rejectionReason?: string | null;
   distributor: Distributor;
   salesRep: {
     id: string;

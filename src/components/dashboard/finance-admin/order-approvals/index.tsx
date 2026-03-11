@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -32,240 +32,55 @@ import {
   CheckSquare,
   RefreshCw
 } from 'lucide-react';
-import { SalesOrder } from '@/types/orders';
+import { useApproveSalesOrder, useBulkApproveSalesOrders, useRejectSalesOrder, useSalesOrders } from '@/hooks/use-sales';
+import type { SalesOrder, SalesOrderStatus } from '@/app/api/service/salesService';
 
 export function OrderApprovals() {
-  const [orders, setOrders] = useState<SalesOrder[]>([]);
   const [filteredOrders, setFilteredOrders] = useState<SalesOrder[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('PENDING_APPROVAL');
   const [currencyFilter, setCurrencyFilter] = useState('all');
-  const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<SalesOrder | null>(null);
   const [showApprovalDialog, setShowApprovalDialog] = useState(false);
   const [showRejectionDialog, setShowRejectionDialog] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
-  const [processing, setProcessing] = useState(false);
+  const [page, setPage] = useState(1);
+  const limit = 10;
 
-  // Mock data with approval statuses
-  const mockOrders: SalesOrder[] = [
-    {
-      id: '91baeb6a-d9c5-4605-9af9-e38f130d9dbf',
-      distributorId: '98fa8d05-a83a-4eec-8568-3c4ee43ac3ce',
-      salesRepId: 'd2d64bfa-2ce5-4a8a-b5a3-8e09581eb01d',
-      currency: 'NGN',
-      approvalStatus: 'PENDING_APPROVAL',
-      paymentStatus: 'PENDING',
-      orderAmount: 20000,
-      amountPaid: 0,
-      amountRemaining: 20000,
-      createdAt: '2025-01-12T10:30:00.000Z',
-      updatedAt: '2025-01-12T10:30:00.000Z',
-      distributor: {
-        id: '98fa8d05-a83a-4eec-8568-3c4ee43ac3ce',
-        name: 'HealthPlus Pharmacy Ltd.',
-        code: 'DX-0001',
-        type: 'PHARMACY',
-        email: 'contact@healthplus.com',
-        phone: '+2348012345678',
-        address: '23 Hospital Road, Kano, Nigeria',
-        creditLimit: 500000,
-        currency: 'NGN'
-      },
-      salesRep: {
-        id: 'd2d64bfa-2ce5-4a8a-b5a3-8e09581eb01d',
-        email: 'sales@naxoshealthcare.com'
-      },
-      items: [
-        {
-          id: '536ec139-ce64-4513-bb5d-2ca08b76e9c6',
-          medicineId: 'c569e156-dcf4-4e69-a02e-5d31542a246e',
-          quantity: 10,
-          unitPrice: 2000,
-          medicine: {
-            id: 'c569e156-dcf4-4e69-a02e-5d31542a246e',
-            name: 'Pc',
-            strength: '250n',
-            form: 'Capsule',
-            manufacturer: 'enzo'
-          }
-        }
-      ],
-      payments: []
-    },
-    {
-      id: 'ord-pending-002',
-      distributorId: 'dist-002',
-      salesRepId: 'd2d64bfa-2ce5-4a8a-b5a3-8e09581eb01d',
-      currency: 'NGN',
-      approvalStatus: 'PENDING_APPROVAL',
-      paymentStatus: 'PENDING',
-      orderAmount: 45000,
-      amountPaid: 0,
-      amountRemaining: 45000,
-      createdAt: '2025-01-12T09:15:00.000Z',
-      updatedAt: '2025-01-12T09:15:00.000Z',
-      distributor: {
-        id: 'dist-002',
-        name: 'City General Hospital',
-        code: 'DX-0002',
-        type: 'HOSPITAL',
-        email: 'procurement@citygeneral.com',
-        phone: '+2348098765432',
-        address: '15 Medical Center Drive, Lagos, Nigeria',
-        creditLimit: 1000000,
-        currency: 'NGN'
-      },
-      salesRep: {
-        id: 'd2d64bfa-2ce5-4a8a-b5a3-8e09581eb01d',
-        email: 'sales@naxoshealthcare.com'
-      },
-      items: [
-        {
-          id: 'item-002-1',
-          medicineId: 'med-002',
-          quantity: 100,
-          unitPrice: 150,
-          medicine: {
-            id: 'med-002',
-            name: 'Paracetamol',
-            strength: '500mg',
-            form: 'Tablet',
-            manufacturer: 'GSK'
-          }
-        },
-        {
-          id: 'item-002-2',
-          medicineId: 'med-003',
-          quantity: 50,
-          unitPrice: 350,
-          medicine: {
-            id: 'med-003',
-            name: 'Amoxicillin',
-            strength: '250mg',
-            form: 'Capsule',
-            manufacturer: 'Pfizer'
-          }
-        }
-      ],
-      payments: []
-    },
-    {
-      id: 'ord-approved-001',
-      distributorId: 'dist-003',
-      salesRepId: 'd2d64bfa-2ce5-4a8a-b5a3-8e09581eb01d',
-      currency: 'USD',
-      approvalStatus: 'APPROVED',
-      paymentStatus: 'PAID',
-      orderAmount: 850,
-      amountPaid: 850,
-      amountRemaining: 0,
-      createdAt: '2025-01-11T14:20:00.000Z',
-      updatedAt: '2025-01-11T15:30:00.000Z',
-      approvedBy: 'finance@naxoshealthcare.com',
-      approvedAt: '2025-01-11T15:00:00.000Z',
-      distributor: {
-        id: 'dist-003',
-        name: 'MedSupply Wholesalers',
-        code: 'DX-0003',
-        type: 'WHOLESALER',
-        email: 'orders@medsupply.ng',
-        phone: '+2349012345678',
-        address: '78 Industrial Avenue, Abuja, Nigeria',
-        creditLimit: 2000000,
-        currency: 'NGN'
-      },
-      salesRep: {
-        id: 'd2d64bfa-2ce5-4a8a-b5a3-8e09581eb01d',
-        email: 'sales@naxoshealthcare.com'
-      },
-      items: [
-        {
-          id: 'item-003-1',
-          medicineId: 'med-001',
-          quantity: 25,
-          unitPrice: 34,
-          medicine: {
-            id: 'med-001',
-            name: 'Aspirin',
-            strength: '100mg',
-            form: 'Tablet',
-            manufacturer: 'Bayer'
-          }
-        }
-      ],
-      payments: [
-        {
-          id: 'pay-003',
-          amount: 850,
-          currency: 'USD',
-          type: 'BANK_TRANSFER',
-          createdAt: '2025-01-11T15:30:00.000Z'
-        }
-      ]
-    },
-    {
-      id: 'ord-rejected-001',
-      distributorId: '98fa8d05-a83a-4eec-8568-3c4ee43ac3ce',
-      salesRepId: 'd2d64bfa-2ce5-4a8a-b5a3-8e09581eb01d',
-      currency: 'NGN',
-      approvalStatus: 'REJECTED',
-      paymentStatus: 'PENDING',
-      orderAmount: 15000,
-      amountPaid: 0,
-      amountRemaining: 15000,
-      createdAt: '2025-01-10T11:45:00.000Z',
-      updatedAt: '2025-01-10T13:00:00.000Z',
-      rejectedBy: 'finance@naxoshealthcare.com',
-      rejectedAt: '2025-01-10T13:00:00.000Z',
-      rejectionReason: 'Customer has exceeded credit limit. Payment required upfront.',
-      distributor: {
-        id: '98fa8d05-a83a-4eec-8568-3c4ee43ac3ce',
-        name: 'HealthPlus Pharmacy Ltd.',
-        code: 'DX-0001',
-        type: 'PHARMACY',
-        email: 'contact@healthplus.com',
-        phone: '+2348012345678',
-        address: '23 Hospital Road, Kano, Nigeria',
-        creditLimit: 500000,
-        currency: 'NGN'
-      },
-      salesRep: {
-        id: 'd2d64bfa-2ce5-4a8a-b5a3-8e09581eb01d',
-        email: 'sales@naxoshealthcare.com'
-      },
-      items: [
-        {
-          id: 'item-rej-001',
-          medicineId: 'med-002',
-          quantity: 100,
-          unitPrice: 150,
-          medicine: {
-            id: 'med-002',
-            name: 'Paracetamol',
-            strength: '500mg',
-            form: 'Tablet',
-            manufacturer: 'GSK'
-          }
-        }
-      ],
-      payments: []
-    }
-  ];
+  const isSalesOrderStatus = (value: string): value is SalesOrderStatus =>
+    value === 'DRAFT' || value === 'PENDING_APPROVAL' || value === 'APPROVED' || value === 'REJECTED';
 
+  const orderStatusParam = statusFilter === 'all' ? undefined : (isSalesOrderStatus(statusFilter) ? statusFilter : undefined);
+
+  const salesOrdersQuery = useSalesOrders({
+    page,
+    limit,
+    sortOrder: 'asc',
+    sortField: 'createdAt',
+    search: searchTerm || undefined,
+    orderStatus: orderStatusParam,
+  });
+
+  const approveMutation = useApproveSalesOrder();
+  const rejectMutation = useRejectSalesOrder();
+  const bulkApproveMutation = useBulkApproveSalesOrders();
+
+  const orders = useMemo(() => salesOrdersQuery.data?.data ?? [], [salesOrdersQuery.data?.data]);
+  const meta = salesOrdersQuery.data?.meta;
+  const loading = salesOrdersQuery.isLoading || salesOrdersQuery.isFetching;
+  const processing = approveMutation.isPending || rejectMutation.isPending || bulkApproveMutation.isPending;
+
+  const getOrderStatus = (order: SalesOrder) => order.status;
+
+
+  // Reset pagination + selection when filters/search change
   useEffect(() => {
-    const fetchOrders = async () => {
-      setLoading(true);
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setOrders(mockOrders);
-      setLoading(false);
-    };
-
-    fetchOrders();
-  }, []);
+    setPage(1);
+    setSelectedOrders(new Set());
+    setExpandedOrder(null);
+  }, [searchTerm, statusFilter, currencyFilter]);
 
   useEffect(() => {
     const filtered = orders.filter(order => {
@@ -274,7 +89,7 @@ export function OrderApprovals() {
         order.distributor.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
         order.id.toLowerCase().includes(searchTerm.toLowerCase());
 
-      const matchesStatus = statusFilter === 'all' || order.approvalStatus === statusFilter;
+      const matchesStatus = statusFilter === 'all' || getOrderStatus(order) === statusFilter;
       const matchesCurrency = currencyFilter === 'all' || order.currency === currencyFilter;
 
       return matchesSearch && matchesStatus && matchesCurrency;
@@ -299,21 +114,11 @@ export function OrderApprovals() {
 
   const confirmApproval = async () => {
     if (!selectedOrder) return;
-
-    setProcessing(true);
     try {
-      // Simulate API call to approve order
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await approveMutation.mutateAsync({
+        orderId: selectedOrder.id,
+      });
 
-      const updatedOrder: SalesOrder = {
-        ...selectedOrder,
-        approvalStatus: 'APPROVED',
-        approvedBy: 'finance@naxoshealthcare.com',
-        approvedAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-
-      setOrders(orders.map(o => o.id === selectedOrder.id ? updatedOrder : o));
       toast.success(`Order #${selectedOrder.id.slice(0, 8)}... has been approved`);
       setShowApprovalDialog(false);
       setSelectedOrder(null);
@@ -322,10 +127,10 @@ export function OrderApprovals() {
         newSet.delete(selectedOrder.id);
         return newSet;
       });
-    } catch (error) {
+
+      await salesOrdersQuery.refetch();
+    } catch {
       toast.error('Failed to approve order');
-    } finally {
-      setProcessing(false);
     }
   };
 
@@ -334,22 +139,12 @@ export function OrderApprovals() {
       toast.error('Please provide a reason for rejection');
       return;
     }
-
-    setProcessing(true);
     try {
-      // Simulate API call to reject order
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      const updatedOrder: SalesOrder = {
-        ...selectedOrder,
-        approvalStatus: 'REJECTED',
-        rejectedBy: 'finance@naxoshealthcare.com',
-        rejectedAt: new Date().toISOString(),
+      await rejectMutation.mutateAsync({
+        orderId: selectedOrder.id,
         rejectionReason: rejectionReason,
-        updatedAt: new Date().toISOString()
-      };
+      });
 
-      setOrders(orders.map(o => o.id === selectedOrder.id ? updatedOrder : o));
       toast.success(`Order #${selectedOrder.id.slice(0, 8)}... has been rejected`);
       setShowRejectionDialog(false);
       setSelectedOrder(null);
@@ -359,10 +154,10 @@ export function OrderApprovals() {
         newSet.delete(selectedOrder.id);
         return newSet;
       });
-    } catch (error) {
+
+      await salesOrdersQuery.refetch();
+    } catch {
       toast.error('Failed to reject order');
-    } finally {
-      setProcessing(false);
     }
   };
 
@@ -371,32 +166,24 @@ export function OrderApprovals() {
       toast.error('Please select orders to approve');
       return;
     }
-
-    setProcessing(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const orderIds = filteredOrders
+        .filter((order) => selectedOrders.has(order.id) && getOrderStatus(order) === 'PENDING_APPROVAL')
+        .map((order) => order.id);
 
-      const updatedOrders = orders.map(order => {
-        if (selectedOrders.has(order.id) && order.approvalStatus === 'PENDING_APPROVAL') {
-          return {
-            ...order,
-            approvalStatus: 'APPROVED' as const,
-            approvedBy: 'finance@naxoshealthcare.com',
-            approvedAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-          };
-        }
-        return order;
-      });
+      if (orderIds.length === 0) {
+        toast.error('No pending orders selected');
+        return;
+      }
 
-      setOrders(updatedOrders);
-      toast.success(`${selectedOrders.size} order(s) approved successfully`);
+      await bulkApproveMutation.mutateAsync({ orderIds });
+
+      toast.success(`${orderIds.length} order(s) approved successfully`);
       setSelectedOrders(new Set());
-    } catch (error) {
+
+      await salesOrdersQuery.refetch();
+    } catch {
       toast.error('Failed to approve orders');
-    } finally {
-      setProcessing(false);
     }
   };
 
@@ -413,10 +200,10 @@ export function OrderApprovals() {
   };
 
   const toggleSelectAll = () => {
-    if (selectedOrders.size === filteredOrders.filter(o => o.approvalStatus === 'PENDING_APPROVAL').length) {
+    if (selectedOrders.size === filteredOrders.filter(o => getOrderStatus(o) === 'PENDING_APPROVAL').length) {
       setSelectedOrders(new Set());
     } else {
-      setSelectedOrders(new Set(filteredOrders.filter(o => o.approvalStatus === 'PENDING_APPROVAL').map(o => o.id)));
+      setSelectedOrders(new Set(filteredOrders.filter(o => getOrderStatus(o) === 'PENDING_APPROVAL').map(o => o.id)));
     }
   };
 
@@ -476,11 +263,11 @@ export function OrderApprovals() {
     setExpandedOrder(expandedOrder === orderId ? null : orderId);
   };
 
-  const pendingCount = orders.filter(o => o.approvalStatus === 'PENDING_APPROVAL').length;
-  const approvedCount = orders.filter(o => o.approvalStatus === 'APPROVED').length;
-  const rejectedCount = orders.filter(o => o.approvalStatus === 'REJECTED').length;
+  const pendingCount = orders.filter(o => getOrderStatus(o) === 'PENDING_APPROVAL').length;
+  const approvedCount = orders.filter(o => getOrderStatus(o) === 'APPROVED').length;
+  const rejectedCount = orders.filter(o => getOrderStatus(o) === 'REJECTED').length;
   const pendingValue = orders
-    .filter(o => o.approvalStatus === 'PENDING_APPROVAL')
+    .filter(o => getOrderStatus(o) === 'PENDING_APPROVAL')
     .reduce((sum, o) => sum + o.orderAmount, 0);
 
   return (
@@ -495,10 +282,36 @@ export function OrderApprovals() {
             Review and approve sales orders before processing
           </p>
         </div>
-        <Button variant="outline" size="sm">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={loading || !meta?.hasPreviousPage}
+          >
+            Prev
+          </Button>
+          <div className="text-sm text-muted-foreground">
+            Page {meta?.page ?? page} / {meta?.pageCount ?? 1}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPage((p) => p + 1)}
+            disabled={loading || !meta?.hasNextPage}
+          >
+            Next
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => salesOrdersQuery.refetch()}
+            disabled={loading}
+          >
           <RefreshCw className="h-4 w-4 mr-2" />
           Refresh
-        </Button>
+          </Button>
+        </div>
       </div>
 
       {/* Summary Cards */}
@@ -643,13 +456,13 @@ export function OrderApprovals() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-12">
-                    {filteredOrders.some(o => o.approvalStatus === 'PENDING_APPROVAL') && (
+                    {filteredOrders.some(o => getOrderStatus(o) === 'PENDING_APPROVAL') && (
                       <input
                         type="checkbox"
                         checked={
                           selectedOrders.size > 0 &&
                           selectedOrders.size ===
-                            filteredOrders.filter(o => o.approvalStatus === 'PENDING_APPROVAL').length
+                            filteredOrders.filter(o => getOrderStatus(o) === 'PENDING_APPROVAL').length
                         }
                         onChange={toggleSelectAll}
                         className="rounded border-input"
@@ -669,7 +482,7 @@ export function OrderApprovals() {
                   <>
                     <TableRow key={order.id} className="cursor-pointer hover:bg-muted/50">
                       <TableCell>
-                        {order.approvalStatus === 'PENDING_APPROVAL' && (
+                        {getOrderStatus(order) === 'PENDING_APPROVAL' && (
                           <input
                             type="checkbox"
                             checked={selectedOrders.has(order.id)}
@@ -700,7 +513,7 @@ export function OrderApprovals() {
                           {formatCurrency(order.orderAmount, order.currency)}
                         </div>
                       </TableCell>
-                      <TableCell>{getStatusBadge(order.approvalStatus)}</TableCell>
+                      <TableCell>{getStatusBadge(getOrderStatus(order) ?? 'UNKNOWN')}</TableCell>
                       <TableCell>
                         <div className="text-sm">
                           <div className="flex items-center gap-1">
@@ -722,7 +535,7 @@ export function OrderApprovals() {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          {order.approvalStatus === 'PENDING_APPROVAL' && (
+                          {getOrderStatus(order) === 'PENDING_APPROVAL' && (
                             <>
                               <Button
                                 size="sm"
@@ -799,29 +612,35 @@ export function OrderApprovals() {
                             </div>
 
                             {/* Approval/Rejection Info */}
-                            {order.approvalStatus === 'APPROVED' && order.approvedBy && (
+                            {getOrderStatus(order) === 'APPROVED' && order.approvedById && (
                               <div className="bg-success/10 border border-success/20 rounded p-3">
                                 <div className="flex items-center gap-2 text-success mb-2">
                                   <CheckCircle className="h-4 w-4" />
                                   <span className="font-semibold">Approved</span>
                                 </div>
                                 <div className="text-sm space-y-1">
-                                  <div><strong>Approved by:</strong> {order.approvedBy}</div>
+                                  <div><strong>Approved by:</strong> {order.approvedById}</div>
                                   {order.approvedAt && (
                                     <div><strong>Approved at:</strong> {formatDate(order.approvedAt)}</div>
+                                  )}
+                                  {order.approvalNotes && (
+                                    <div className="mt-2">
+                                      <strong>Notes:</strong>
+                                      <p className="mt-1 text-muted-foreground">{order.approvalNotes}</p>
+                                    </div>
                                   )}
                                 </div>
                               </div>
                             )}
 
-                            {order.approvalStatus === 'REJECTED' && order.rejectedBy && (
+                            {getOrderStatus(order) === 'REJECTED' && order.rejectedById && (
                               <div className="bg-destructive/10 border border-destructive/20 rounded p-3">
                                 <div className="flex items-center gap-2 text-destructive mb-2">
                                   <XCircle className="h-4 w-4" />
                                   <span className="font-semibold">Rejected</span>
                                 </div>
                                 <div className="text-sm space-y-1">
-                                  <div><strong>Rejected by:</strong> {order.rejectedBy}</div>
+                                  <div><strong>Rejected by:</strong> {order.rejectedById}</div>
                                   {order.rejectedAt && (
                                     <div><strong>Rejected at:</strong> {formatDate(order.rejectedAt)}</div>
                                   )}
