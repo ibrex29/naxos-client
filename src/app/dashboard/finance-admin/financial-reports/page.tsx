@@ -3,6 +3,7 @@
 'use client';
 
 import { useState } from 'react';
+import { exportToPDF, exportToExcel, exportToWord, printReport, type ExportOptions } from '@/utils/report-export';
 import {
   Card,
   CardContent,
@@ -39,6 +40,10 @@ import {
   TrendingUp,
   TrendingDown,
   Search,
+  FileText,
+  BarChart2,
+  ShoppingCart,
+  Package,
 } from 'lucide-react';
 
 export default function FinancialReports() {
@@ -47,6 +52,8 @@ export default function FinancialReports() {
   const [dateTo, setDateTo] = useState<Date | undefined>(new Date());
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState('all');
+  const [salesPeriodView, setSalesPeriodView] = useState<'monthly' | 'weekly'>('monthly');
+  const [purchasePeriodView, setPurchasePeriodView] = useState<'monthly' | 'weekly'>('monthly');
 
   const formatDate = (date: Date | undefined) => {
     if (!date) return 'Pick a date';
@@ -243,13 +250,78 @@ export default function FinancialReports() {
     { period: 'Q1 2024', type: 'Company Income Tax', taxable: 82_500_000, rate: 30, amount: 24_750_000, status: 'pending' },
   ];
 
-  const ExportButtons = () => (
-    <div className="flex gap-2">
-      <Button variant="outline" size="sm"><Printer className="h-4 w-4 mr-2" />Print</Button>
-      <Button variant="outline" size="sm"><Download className="h-4 w-4 mr-2" />PDF</Button>
-      <Button variant="outline" size="sm"><FileSpreadsheet className="h-4 w-4 mr-2" />Excel</Button>
-    </div>
-  );
+  // ── Sales report mock data ──────────────────────────────────────
+  const monthlySales = [
+    { period: 'Jan 2024', invoices: 142, customers: 38, grossSales: 45_750_000, returns: 850_000,   netSales: 44_900_000, collected: 42_100_000, outstanding: 2_800_000 },
+    { period: 'Feb 2024', invoices: 158, customers: 41, grossSales: 52_200_000, returns: 600_000,   netSales: 51_600_000, collected: 49_800_000, outstanding: 1_800_000 },
+    { period: 'Mar 2024', invoices: 167, customers: 44, grossSales: 58_900_000, returns: 1_100_000, netSales: 57_800_000, collected: 55_200_000, outstanding: 2_600_000 },
+    { period: 'Apr 2024', invoices: 144, customers: 39, grossSales: 48_300_000, returns: 750_000,   netSales: 47_550_000, collected: 45_000_000, outstanding: 2_550_000 },
+    { period: 'May 2024', invoices: 172, customers: 47, grossSales: 63_400_000, returns: 900_000,   netSales: 62_500_000, collected: 60_100_000, outstanding: 2_400_000 },
+    { period: 'Jun 2024', invoices: 185, customers: 50, grossSales: 71_200_000, returns: 1_200_000, netSales: 70_000_000, collected: 67_500_000, outstanding: 2_500_000 },
+  ];
+  const weeklySales = [
+    { period: 'Week 36 (Sep 2–8)',   invoices: 38, customers: 14, grossSales: 12_400_000, returns: 200_000, netSales: 12_200_000, collected: 11_800_000, outstanding: 400_000 },
+    { period: 'Week 37 (Sep 9–15)',  invoices: 42, customers: 16, grossSales: 14_100_000, returns: 350_000, netSales: 13_750_000, collected: 13_000_000, outstanding: 750_000 },
+    { period: 'Week 38 (Sep 16–22)', invoices: 35, customers: 12, grossSales: 11_800_000, returns: 180_000, netSales: 11_620_000, collected: 11_200_000, outstanding: 420_000 },
+    { period: 'Week 39 (Sep 23–29)', invoices: 44, customers: 17, grossSales: 15_200_000, returns: 420_000, netSales: 14_780_000, collected: 14_100_000, outstanding: 680_000 },
+  ];
+
+  // ── Purchase report mock data ───────────────────────────────────
+  const monthlyPurchases = [
+    { period: 'Jan 2024', orders: 22, suppliers: 8,  grossPurchases: 38_200_000, returns: 400_000, netPurchases: 37_800_000, paid: 35_000_000, outstanding: 2_800_000 },
+    { period: 'Feb 2024', orders: 26, suppliers: 9,  grossPurchases: 44_100_000, returns: 300_000, netPurchases: 43_800_000, paid: 42_000_000, outstanding: 1_800_000 },
+    { period: 'Mar 2024', orders: 29, suppliers: 11, grossPurchases: 51_500_000, returns: 800_000, netPurchases: 50_700_000, paid: 48_500_000, outstanding: 2_200_000 },
+    { period: 'Apr 2024', orders: 24, suppliers: 9,  grossPurchases: 42_300_000, returns: 500_000, netPurchases: 41_800_000, paid: 39_200_000, outstanding: 2_600_000 },
+    { period: 'May 2024', orders: 31, suppliers: 12, grossPurchases: 55_800_000, returns: 700_000, netPurchases: 55_100_000, paid: 53_000_000, outstanding: 2_100_000 },
+    { period: 'Jun 2024', orders: 33, suppliers: 12, grossPurchases: 62_400_000, returns: 900_000, netPurchases: 61_500_000, paid: 59_000_000, outstanding: 2_500_000 },
+  ];
+  const weeklyPurchases = [
+    { period: 'Week 36 (Sep 2–8)',   orders: 6, suppliers: 4, grossPurchases: 10_200_000, returns: 150_000, netPurchases: 10_050_000, paid: 9_500_000,  outstanding: 550_000 },
+    { period: 'Week 37 (Sep 9–15)',  orders: 8, suppliers: 5, grossPurchases: 13_400_000, returns: 200_000, netPurchases: 13_200_000, paid: 12_800_000, outstanding: 400_000 },
+    { period: 'Week 38 (Sep 16–22)', orders: 5, suppliers: 3, grossPurchases: 9_100_000,  returns: 100_000, netPurchases: 9_000_000,  paid: 8_600_000,  outstanding: 400_000 },
+    { period: 'Week 39 (Sep 23–29)', orders: 9, suppliers: 6, grossPurchases: 14_800_000, returns: 300_000, netPurchases: 14_500_000, paid: 13_900_000, outstanding: 600_000 },
+  ];
+
+  // ── Stock summary mock data ─────────────────────────────────────
+  const stockSummary = [
+    { code: 'MED-001', name: 'Amoxicillin 500mg (Caps)',  category: 'Antibiotics',    unit: 'Caps',   openingQty: 12_500, received: 8_000,  issued: 9_200,  closing: 11_300, value: 22_600_000, status: 'Normal'    },
+    { code: 'MED-002', name: 'Paracetamol 500mg (Tab)',   category: 'Analgesics',     unit: 'Tabs',   openingQty: 28_000, received: 20_000, issued: 22_500, closing: 25_500, value: 12_750_000, status: 'Normal'    },
+    { code: 'MED-003', name: 'Artemether/Lumefantrine',   category: 'Antimalarials',  unit: 'Tabs',   openingQty: 6_400,  received: 4_000,  issued: 7_800,  closing: 2_600,  value: 9_100_000,  status: 'Low Stock' },
+    { code: 'MED-004', name: 'Metformin 500mg (Tab)',     category: 'Antidiabetics',  unit: 'Tabs',   openingQty: 9_000,  received: 6_000,  issued: 8_500,  closing: 6_500,  value: 5_200_000,  status: 'Normal'    },
+    { code: 'MED-005', name: 'Amlodipine 5mg (Tab)',      category: 'Cardiovascular', unit: 'Tabs',   openingQty: 4_200,  received: 3_000,  issued: 4_100,  closing: 3_100,  value: 4_650_000,  status: 'Normal'    },
+    { code: 'MED-006', name: 'Ciprofloxacin 500mg (Tab)', category: 'Antibiotics',    unit: 'Tabs',   openingQty: 5_500,  received: 0,      issued: 5_450,  closing: 50,     value: 85_000,     status: 'Critical'  },
+    { code: 'MED-007', name: 'ORS Sachets 20.5g',         category: 'ORT',            unit: 'Sachet', openingQty: 15_000, received: 10_000, issued: 12_000, closing: 13_000, value: 2_600_000,  status: 'Normal'    },
+    { code: 'MED-008', name: 'IV Fluid (Normal Saline)',  category: 'IV Fluids',      unit: 'Bags',   openingQty: 1_800,  received: 1_200,  issued: 2_400,  closing: 600,    value: 3_000_000,  status: 'Low Stock' },
+  ];
+  const totalStockValue = stockSummary.reduce((s, i) => s + i.value, 0);
+  const lowStockCount   = stockSummary.filter(i => i.status !== 'Normal').length;
+
+  // ── Real export helper ──────────────────────────────────────────
+  const ExportButtons = ({ opts }: { opts?: ExportOptions }) => {
+    const period = dateFrom && dateTo ? `${formatDate(dateFrom)} – ${formatDate(dateTo)}` : undefined;
+    const resolved: ExportOptions = opts ?? {
+      title: 'Financial Report',
+      headers: [],
+      rows: [],
+      period,
+    };
+    return (
+      <div className="flex flex-wrap gap-2">
+        <Button variant="outline" size="sm" onClick={() => printReport(resolved)}>
+          <Printer className="h-4 w-4 mr-2" />Print
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => exportToPDF(resolved)}>
+          <Download className="h-4 w-4 mr-2" />PDF
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => exportToExcel(resolved)}>
+          <FileSpreadsheet className="h-4 w-4 mr-2" />Excel
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => exportToWord(resolved)}>
+          <FileText className="h-4 w-4 mr-2" />Word
+        </Button>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-8 p-6 max-w-full">
@@ -314,16 +386,97 @@ export default function FinancialReports() {
       </Card>
 
       <Tabs defaultValue="profit-loss" className="space-y-6">
-        <TabsList className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 w-full">
-          <TabsTrigger value="profit-loss">P&L</TabsTrigger>
-          <TabsTrigger value="balance-sheet">Balance Sheet</TabsTrigger>
-          <TabsTrigger value="trial-balance">Trial Balance</TabsTrigger>
-          <TabsTrigger value="cash-flow">Cash Flow</TabsTrigger>
-          <TabsTrigger value="account-statement">Account Stmt</TabsTrigger>
-          <TabsTrigger value="tax-reports">Tax Reports</TabsTrigger>
-          <TabsTrigger value="payment-register">Payments</TabsTrigger>
-          <TabsTrigger value="receipt-register">Receipts</TabsTrigger>
+        <div className="overflow-x-auto pb-1 -mb-1">
+        <TabsList className="flex flex-nowrap w-max min-w-full h-auto gap-1.5 bg-muted/60 border border-border rounded-xl p-1.5">
+          <TabsTrigger
+            value="profit-loss"
+            className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg border border-transparent transition-all
+              data-[state=active]:bg-background data-[state=active]:border-primary data-[state=active]:text-primary
+              data-[state=active]:shadow-sm data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:text-foreground
+              data-[state=inactive]:hover:bg-background/60"
+          ><BarChart2 className="h-3.5 w-3.5" />P&amp;L</TabsTrigger>
+
+          <TabsTrigger
+            value="balance-sheet"
+            className="px-2.5 py-1.5 text-xs font-medium rounded-lg border border-transparent transition-all
+              data-[state=active]:bg-background data-[state=active]:border-primary data-[state=active]:text-primary
+              data-[state=active]:shadow-sm data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:text-foreground
+              data-[state=inactive]:hover:bg-background/60"
+          >Balance Sheet</TabsTrigger>
+
+          <TabsTrigger
+            value="trial-balance"
+            className="px-2.5 py-1.5 text-xs font-medium rounded-lg border border-transparent transition-all
+              data-[state=active]:bg-background data-[state=active]:border-primary data-[state=active]:text-primary
+              data-[state=active]:shadow-sm data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:text-foreground
+              data-[state=inactive]:hover:bg-background/60"
+          >Trial Balance</TabsTrigger>
+
+          <TabsTrigger
+            value="cash-flow"
+            className="px-2.5 py-1.5 text-xs font-medium rounded-lg border border-transparent transition-all
+              data-[state=active]:bg-background data-[state=active]:border-primary data-[state=active]:text-primary
+              data-[state=active]:shadow-sm data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:text-foreground
+              data-[state=inactive]:hover:bg-background/60"
+          >Cash Flow</TabsTrigger>
+
+          <TabsTrigger
+            value="account-statement"
+            className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg border border-transparent transition-all
+              data-[state=active]:bg-background data-[state=active]:border-primary data-[state=active]:text-primary
+              data-[state=active]:shadow-sm data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:text-foreground
+              data-[state=inactive]:hover:bg-background/60"
+          ><FileText className="h-3.5 w-3.5" />Account Stmt</TabsTrigger>
+
+          <TabsTrigger
+            value="tax-reports"
+            className="px-2.5 py-1.5 text-xs font-medium rounded-lg border border-transparent transition-all
+              data-[state=active]:bg-background data-[state=active]:border-primary data-[state=active]:text-primary
+              data-[state=active]:shadow-sm data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:text-foreground
+              data-[state=inactive]:hover:bg-background/60"
+          >Tax Reports</TabsTrigger>
+
+          <TabsTrigger
+            value="sales-report"
+            className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg border border-transparent transition-all
+              data-[state=active]:bg-background data-[state=active]:border-primary data-[state=active]:text-primary
+              data-[state=active]:shadow-sm data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:text-foreground
+              data-[state=inactive]:hover:bg-background/60"
+          ><BarChart2 className="h-3.5 w-3.5" />Sales Report</TabsTrigger>
+
+          <TabsTrigger
+            value="purchase-report"
+            className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg border border-transparent transition-all
+              data-[state=active]:bg-background data-[state=active]:border-primary data-[state=active]:text-primary
+              data-[state=active]:shadow-sm data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:text-foreground
+              data-[state=inactive]:hover:bg-background/60"
+          ><ShoppingCart className="h-3.5 w-3.5" />Purchase Report</TabsTrigger>
+
+          <TabsTrigger
+            value="stock-summary"
+            className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg border border-transparent transition-all
+              data-[state=active]:bg-background data-[state=active]:border-primary data-[state=active]:text-primary
+              data-[state=active]:shadow-sm data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:text-foreground
+              data-[state=inactive]:hover:bg-background/60"
+          ><Package className="h-3.5 w-3.5" />Stock Summary</TabsTrigger>
+
+          <TabsTrigger
+            value="payment-register"
+            className="px-2.5 py-1.5 text-xs font-medium rounded-lg border border-transparent transition-all
+              data-[state=active]:bg-background data-[state=active]:border-primary data-[state=active]:text-primary
+              data-[state=active]:shadow-sm data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:text-foreground
+              data-[state=inactive]:hover:bg-background/60"
+          >Payments</TabsTrigger>
+
+          <TabsTrigger
+            value="receipt-register"
+            className="px-2.5 py-1.5 text-xs font-medium rounded-lg border border-transparent transition-all
+              data-[state=active]:bg-background data-[state=active]:border-primary data-[state=active]:text-primary
+              data-[state=active]:shadow-sm data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:text-foreground
+              data-[state=inactive]:hover:bg-background/60"
+          >Receipts</TabsTrigger>
         </TabsList>
+        </div>
 
         {/* 1. Profit & Loss */}
         <TabsContent value="profit-loss"><Card><CardHeader><div className="flex justify-between items-start"><div><CardTitle>Profit & Loss Statement</CardTitle><CardDescription>For the period ending {formatDate(dateTo)}</CardDescription></div><ExportButtons /></div></CardHeader><CardContent className="space-y-8">{/* Revenue, Expenses, Net Profit */} {/* Same as previous full version */}</CardContent></Card></TabsContent>
@@ -472,9 +625,20 @@ export default function FinancialReports() {
                   <Select value={selectedCustomer} onValueChange={setSelectedCustomer}>
                     <SelectTrigger className="w-64"><SelectValue placeholder="Select Customer" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Customers</SelectItem>
+                      <SelectItem value="all">All Parties</SelectItem>
+                      {/* Local (NGN) */}
+                      <SelectItem value="gen-hosp" className="font-medium" disabled>── Local Parties ──</SelectItem>
+                      <SelectItem value="luth">Lagos Univ. Teaching Hospital</SelectItem>
                       <SelectItem value="gen-hosp">General Hospital Lagos</SelectItem>
                       <SelectItem value="city-pharm">City Pharmacy Ltd</SelectItem>
+                      <SelectItem value="abuja-clinic">Abuja Clinic Network</SelectItem>
+                      <SelectItem value="rural-hc">Rural Health Centers</SelectItem>
+                      {/* International (USD/EUR) */}
+                      <SelectItem value="intl-sep" className="font-medium" disabled>── International Parties ──</SelectItem>
+                      <SelectItem value="med-aid-intl">Medical Aid International (USD)</SelectItem>
+                      <SelectItem value="pharma-europe">PharmEurope GmbH (EUR)</SelectItem>
+                      <SelectItem value="afrimeds-uk">AfriMeds UK Ltd (GBP)</SelectItem>
+                      <SelectItem value="unicef-supply">UNICEF Supply Division (USD)</SelectItem>
                     </SelectContent>
                   </Select>
                   <ExportButtons />
@@ -571,6 +735,317 @@ export default function FinancialReports() {
                     </TableRow>
                   ))}
                 </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* 9. Sales Report */}
+        <TabsContent value="sales-report">
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col lg:flex-row justify-between gap-4">
+                <div>
+                  <CardTitle className="flex items-center gap-2"><BarChart2 className="h-5 w-5" />Sales Report</CardTitle>
+                  <p className="text-muted-foreground text-sm mt-1">Revenue, collections and outstanding by period</p>
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex rounded-lg overflow-hidden border">
+                    <button
+                      onClick={() => setSalesPeriodView('monthly')}
+                      className={`px-4 py-1.5 text-sm font-medium transition-colors ${
+                        salesPeriodView === 'monthly' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                      }`}
+                    >Monthly</button>
+                    <button
+                      onClick={() => setSalesPeriodView('weekly')}
+                      className={`px-4 py-1.5 text-sm font-medium transition-colors ${
+                        salesPeriodView === 'weekly' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                      }`}
+                    >Weekly</button>
+                  </div>
+                  <ExportButtons opts={{
+                    title: `Sales Report (${salesPeriodView === 'monthly' ? 'Monthly' : 'Weekly'})`,
+                    headers: ['Period', 'Invoices', 'Customers', 'Gross Sales', 'Returns', 'Net Sales', 'Collected', 'Outstanding'],
+                    rows: (salesPeriodView === 'monthly' ? monthlySales : weeklySales).map(r => [
+                      r.period, r.invoices, r.customers,
+                      formatCurrency(r.grossSales), formatCurrency(r.returns),
+                      formatCurrency(r.netSales), formatCurrency(r.collected),
+                      formatCurrency(r.outstanding),
+                    ]),
+                    totals: [[
+                      'TOTAL', '', '',
+                      formatCurrency((salesPeriodView === 'monthly' ? monthlySales : weeklySales).reduce((s,r)=>s+r.grossSales,0)),
+                      formatCurrency((salesPeriodView === 'monthly' ? monthlySales : weeklySales).reduce((s,r)=>s+r.returns,0)),
+                      formatCurrency((salesPeriodView === 'monthly' ? monthlySales : weeklySales).reduce((s,r)=>s+r.netSales,0)),
+                      formatCurrency((salesPeriodView === 'monthly' ? monthlySales : weeklySales).reduce((s,r)=>s+r.collected,0)),
+                      formatCurrency((salesPeriodView === 'monthly' ? monthlySales : weeklySales).reduce((s,r)=>s+r.outstanding,0)),
+                    ]],
+                    period: dateFrom && dateTo ? `${formatDate(dateFrom)} – ${formatDate(dateTo)}` : undefined,
+                    filename: `sales-report-${salesPeriodView}`,
+                  }} />
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {/* KPI summary */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                {[{ label:'Total Invoices', val:(salesPeriodView==='monthly'?monthlySales:weeklySales).reduce((s,r)=>s+r.invoices,0).toString() },
+                  { label:'Net Sales', val:formatCurrency((salesPeriodView==='monthly'?monthlySales:weeklySales).reduce((s,r)=>s+r.netSales,0)) },
+                  { label:'Collected', val:formatCurrency((salesPeriodView==='monthly'?monthlySales:weeklySales).reduce((s,r)=>s+r.collected,0)) },
+                  { label:'Outstanding', val:formatCurrency((salesPeriodView==='monthly'?monthlySales:weeklySales).reduce((s,r)=>s+r.outstanding,0)) },
+                ].map(k => (
+                  <div key={k.label} className="p-4 bg-muted/50 rounded-lg">
+                    <p className="text-xs text-muted-foreground">{k.label}</p>
+                    <p className="font-mono font-semibold text-lg">{k.val}</p>
+                  </div>
+                ))}
+              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Period</TableHead>
+                    <TableHead className="text-right">Invoices</TableHead>
+                    <TableHead className="text-right">Customers</TableHead>
+                    <TableHead className="text-right">Gross Sales</TableHead>
+                    <TableHead className="text-right">Returns</TableHead>
+                    <TableHead className="text-right">Net Sales</TableHead>
+                    <TableHead className="text-right">Collected</TableHead>
+                    <TableHead className="text-right">Outstanding</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(salesPeriodView === 'monthly' ? monthlySales : weeklySales).map((r, i) => (
+                    <TableRow key={i}>
+                      <TableCell className="font-medium">{r.period}</TableCell>
+                      <TableCell className="text-right">{r.invoices}</TableCell>
+                      <TableCell className="text-right">{r.customers}</TableCell>
+                      <TableCell className="text-right font-mono">{formatCurrency(r.grossSales)}</TableCell>
+                      <TableCell className="text-right font-mono text-destructive">{formatCurrency(r.returns)}</TableCell>
+                      <TableCell className="text-right font-mono font-semibold">{formatCurrency(r.netSales)}</TableCell>
+                      <TableCell className="text-right font-mono text-success">{formatCurrency(r.collected)}</TableCell>
+                      <TableCell className="text-right font-mono text-warning">{formatCurrency(r.outstanding)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+                <tfoot>
+                  <TableRow className="bg-muted/70 font-bold">
+                    <TableCell>TOTAL</TableCell>
+                    <TableCell className="text-right">{(salesPeriodView==='monthly'?monthlySales:weeklySales).reduce((s,r)=>s+r.invoices,0)}</TableCell>
+                    <TableCell />
+                    <TableCell className="text-right font-mono">{formatCurrency((salesPeriodView==='monthly'?monthlySales:weeklySales).reduce((s,r)=>s+r.grossSales,0))}</TableCell>
+                    <TableCell className="text-right font-mono text-destructive">{formatCurrency((salesPeriodView==='monthly'?monthlySales:weeklySales).reduce((s,r)=>s+r.returns,0))}</TableCell>
+                    <TableCell className="text-right font-mono">{formatCurrency((salesPeriodView==='monthly'?monthlySales:weeklySales).reduce((s,r)=>s+r.netSales,0))}</TableCell>
+                    <TableCell className="text-right font-mono">{formatCurrency((salesPeriodView==='monthly'?monthlySales:weeklySales).reduce((s,r)=>s+r.collected,0))}</TableCell>
+                    <TableCell className="text-right font-mono">{formatCurrency((salesPeriodView==='monthly'?monthlySales:weeklySales).reduce((s,r)=>s+r.outstanding,0))}</TableCell>
+                  </TableRow>
+                </tfoot>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* 10. Purchase Report */}
+        <TabsContent value="purchase-report">
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col lg:flex-row justify-between gap-4">
+                <div>
+                  <CardTitle className="flex items-center gap-2"><ShoppingCart className="h-5 w-5" />Purchase Report</CardTitle>
+                  <p className="text-muted-foreground text-sm mt-1">Procurement spend, returns and outstanding by period</p>
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex rounded-lg overflow-hidden border">
+                    <button
+                      onClick={() => setPurchasePeriodView('monthly')}
+                      className={`px-4 py-1.5 text-sm font-medium transition-colors ${
+                        purchasePeriodView === 'monthly' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                      }`}
+                    >Monthly</button>
+                    <button
+                      onClick={() => setPurchasePeriodView('weekly')}
+                      className={`px-4 py-1.5 text-sm font-medium transition-colors ${
+                        purchasePeriodView === 'weekly' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                      }`}
+                    >Weekly</button>
+                  </div>
+                  <ExportButtons opts={{
+                    title: `Purchase Report (${purchasePeriodView === 'monthly' ? 'Monthly' : 'Weekly'})`,
+                    headers: ['Period', 'Orders', 'Suppliers', 'Gross Purchases', 'Returns', 'Net Purchases', 'Paid', 'Outstanding'],
+                    rows: (purchasePeriodView === 'monthly' ? monthlyPurchases : weeklyPurchases).map(r => [
+                      r.period, r.orders, r.suppliers,
+                      formatCurrency(r.grossPurchases), formatCurrency(r.returns),
+                      formatCurrency(r.netPurchases), formatCurrency(r.paid),
+                      formatCurrency(r.outstanding),
+                    ]),
+                    totals: [[
+                      'TOTAL', '', '',
+                      formatCurrency((purchasePeriodView === 'monthly' ? monthlyPurchases : weeklyPurchases).reduce((s,r)=>s+r.grossPurchases,0)),
+                      formatCurrency((purchasePeriodView === 'monthly' ? monthlyPurchases : weeklyPurchases).reduce((s,r)=>s+r.returns,0)),
+                      formatCurrency((purchasePeriodView === 'monthly' ? monthlyPurchases : weeklyPurchases).reduce((s,r)=>s+r.netPurchases,0)),
+                      formatCurrency((purchasePeriodView === 'monthly' ? monthlyPurchases : weeklyPurchases).reduce((s,r)=>s+r.paid,0)),
+                      formatCurrency((purchasePeriodView === 'monthly' ? monthlyPurchases : weeklyPurchases).reduce((s,r)=>s+r.outstanding,0)),
+                    ]],
+                    period: dateFrom && dateTo ? `${formatDate(dateFrom)} – ${formatDate(dateTo)}` : undefined,
+                    filename: `purchase-report-${purchasePeriodView}`,
+                  }} />
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                {[{ label:'Total Orders', val:(purchasePeriodView==='monthly'?monthlyPurchases:weeklyPurchases).reduce((s,r)=>s+r.orders,0).toString() },
+                  { label:'Net Purchases', val:formatCurrency((purchasePeriodView==='monthly'?monthlyPurchases:weeklyPurchases).reduce((s,r)=>s+r.netPurchases,0)) },
+                  { label:'Paid', val:formatCurrency((purchasePeriodView==='monthly'?monthlyPurchases:weeklyPurchases).reduce((s,r)=>s+r.paid,0)) },
+                  { label:'Outstanding', val:formatCurrency((purchasePeriodView==='monthly'?monthlyPurchases:weeklyPurchases).reduce((s,r)=>s+r.outstanding,0)) },
+                ].map(k => (
+                  <div key={k.label} className="p-4 bg-muted/50 rounded-lg">
+                    <p className="text-xs text-muted-foreground">{k.label}</p>
+                    <p className="font-mono font-semibold text-lg">{k.val}</p>
+                  </div>
+                ))}
+              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Period</TableHead>
+                    <TableHead className="text-right">Orders</TableHead>
+                    <TableHead className="text-right">Suppliers</TableHead>
+                    <TableHead className="text-right">Gross Purchases</TableHead>
+                    <TableHead className="text-right">Returns</TableHead>
+                    <TableHead className="text-right">Net Purchases</TableHead>
+                    <TableHead className="text-right">Paid</TableHead>
+                    <TableHead className="text-right">Outstanding</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(purchasePeriodView === 'monthly' ? monthlyPurchases : weeklyPurchases).map((r, i) => (
+                    <TableRow key={i}>
+                      <TableCell className="font-medium">{r.period}</TableCell>
+                      <TableCell className="text-right">{r.orders}</TableCell>
+                      <TableCell className="text-right">{r.suppliers}</TableCell>
+                      <TableCell className="text-right font-mono">{formatCurrency(r.grossPurchases)}</TableCell>
+                      <TableCell className="text-right font-mono text-destructive">{formatCurrency(r.returns)}</TableCell>
+                      <TableCell className="text-right font-mono font-semibold">{formatCurrency(r.netPurchases)}</TableCell>
+                      <TableCell className="text-right font-mono text-success">{formatCurrency(r.paid)}</TableCell>
+                      <TableCell className="text-right font-mono text-warning">{formatCurrency(r.outstanding)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+                <tfoot>
+                  <TableRow className="bg-muted/70 font-bold">
+                    <TableCell>TOTAL</TableCell>
+                    <TableCell className="text-right">{(purchasePeriodView==='monthly'?monthlyPurchases:weeklyPurchases).reduce((s,r)=>s+r.orders,0)}</TableCell>
+                    <TableCell />
+                    <TableCell className="text-right font-mono">{formatCurrency((purchasePeriodView==='monthly'?monthlyPurchases:weeklyPurchases).reduce((s,r)=>s+r.grossPurchases,0))}</TableCell>
+                    <TableCell className="text-right font-mono text-destructive">{formatCurrency((purchasePeriodView==='monthly'?monthlyPurchases:weeklyPurchases).reduce((s,r)=>s+r.returns,0))}</TableCell>
+                    <TableCell className="text-right font-mono">{formatCurrency((purchasePeriodView==='monthly'?monthlyPurchases:weeklyPurchases).reduce((s,r)=>s+r.netPurchases,0))}</TableCell>
+                    <TableCell className="text-right font-mono">{formatCurrency((purchasePeriodView==='monthly'?monthlyPurchases:weeklyPurchases).reduce((s,r)=>s+r.paid,0))}</TableCell>
+                    <TableCell className="text-right font-mono">{formatCurrency((purchasePeriodView==='monthly'?monthlyPurchases:weeklyPurchases).reduce((s,r)=>s+r.outstanding,0))}</TableCell>
+                  </TableRow>
+                </tfoot>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* 11. Stock Summary Report */}
+        <TabsContent value="stock-summary">
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col lg:flex-row justify-between gap-4">
+                <div>
+                  <CardTitle className="flex items-center gap-2"><Package className="h-5 w-5" />Stock Summary Report</CardTitle>
+                  <p className="text-muted-foreground text-sm mt-1">Opening, receipts, issues, closing quantities and values</p>
+                </div>
+                <ExportButtons opts={{
+                  title: 'Stock Summary Report',
+                  headers: ['Code','Product','Category','Unit','Opening Qty','Received','Issued','Closing Qty','Closing Value','Status'],
+                  rows: stockSummary.map(r => [
+                    r.code, r.name, r.category, r.unit,
+                    r.openingQty.toLocaleString(), r.received.toLocaleString(),
+                    r.issued.toLocaleString(), r.closing.toLocaleString(),
+                    formatCurrency(r.value), r.status,
+                  ]),
+                  totals: [['TOTAL', '', '', '',
+                    stockSummary.reduce((s,r)=>s+r.openingQty,0).toLocaleString(),
+                    stockSummary.reduce((s,r)=>s+r.received,0).toLocaleString(),
+                    stockSummary.reduce((s,r)=>s+r.issued,0).toLocaleString(),
+                    stockSummary.reduce((s,r)=>s+r.closing,0).toLocaleString(),
+                    formatCurrency(totalStockValue), ''
+                  ]],
+                  period: dateFrom && dateTo ? `${formatDate(dateFrom)} – ${formatDate(dateTo)}` : undefined,
+                  filename: 'stock-summary-report',
+                }} />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div className="p-4 bg-muted/50 rounded-lg">
+                  <p className="text-xs text-muted-foreground">Total SKUs</p>
+                  <p className="font-mono font-semibold text-lg">{stockSummary.length}</p>
+                </div>
+                <div className="p-4 bg-muted/50 rounded-lg">
+                  <p className="text-xs text-muted-foreground">Total Closing Value</p>
+                  <p className="font-mono font-semibold text-lg">{formatCurrency(totalStockValue)}</p>
+                </div>
+                <div className="p-4 bg-destructive/10 rounded-lg">
+                  <p className="text-xs text-muted-foreground">Items Needing Attention</p>
+                  <p className="font-mono font-semibold text-lg text-destructive">{lowStockCount}</p>
+                </div>
+                <div className="p-4 bg-muted/50 rounded-lg">
+                  <p className="text-xs text-muted-foreground">Total Units Issued</p>
+                  <p className="font-mono font-semibold text-lg">{stockSummary.reduce((s,r)=>s+r.issued,0).toLocaleString()}</p>
+                </div>
+              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Code</TableHead>
+                    <TableHead>Product</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Unit</TableHead>
+                    <TableHead className="text-right">Opening</TableHead>
+                    <TableHead className="text-right">Received</TableHead>
+                    <TableHead className="text-right">Issued</TableHead>
+                    <TableHead className="text-right">Closing</TableHead>
+                    <TableHead className="text-right">Value</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {stockSummary.map((r) => (
+                    <TableRow key={r.code}>
+                      <TableCell className="font-mono text-xs">{r.code}</TableCell>
+                      <TableCell className="font-medium">{r.name}</TableCell>
+                      <TableCell>{r.category}</TableCell>
+                      <TableCell>{r.unit}</TableCell>
+                      <TableCell className="text-right font-mono">{r.openingQty.toLocaleString()}</TableCell>
+                      <TableCell className="text-right font-mono text-success">{r.received > 0 ? `+${r.received.toLocaleString()}` : '–'}</TableCell>
+                      <TableCell className="text-right font-mono text-warning">{r.issued.toLocaleString()}</TableCell>
+                      <TableCell className="text-right font-mono font-semibold">{r.closing.toLocaleString()}</TableCell>
+                      <TableCell className="text-right font-mono">{formatCurrency(r.value)}</TableCell>
+                      <TableCell>
+                        <Badge className={{
+                          'Normal':    'bg-success/10 text-success border-success/20',
+                          'Low Stock': 'bg-warning/10 text-warning border-warning/20',
+                          'Critical':  'bg-destructive/10 text-destructive border-destructive/20',
+                        }[r.status] ?? ''}>{r.status}</Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+                <tfoot>
+                  <TableRow className="bg-muted/70 font-bold">
+                    <TableCell colSpan={4}>TOTAL</TableCell>
+                    <TableCell className="text-right font-mono">{stockSummary.reduce((s,r)=>s+r.openingQty,0).toLocaleString()}</TableCell>
+                    <TableCell className="text-right font-mono">{stockSummary.reduce((s,r)=>s+r.received,0).toLocaleString()}</TableCell>
+                    <TableCell className="text-right font-mono">{stockSummary.reduce((s,r)=>s+r.issued,0).toLocaleString()}</TableCell>
+                    <TableCell className="text-right font-mono">{stockSummary.reduce((s,r)=>s+r.closing,0).toLocaleString()}</TableCell>
+                    <TableCell className="text-right font-mono">{formatCurrency(totalStockValue)}</TableCell>
+                    <TableCell />
+                  </TableRow>
+                </tfoot>
               </Table>
             </CardContent>
           </Card>
